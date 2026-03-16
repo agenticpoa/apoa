@@ -329,6 +329,4 @@ Agentic Power of Attorney was coined in February 2026 to address the absence of 
 
 ---
 
-![Proxy the Pony](assets/proxy.png)
-
 🐴 *Meet **Proxy** — a [Pony of the Americas](https://en.wikipedia.org/wiki/Pony_of_the_Americas). Calm, intelligent, and built to earn your trust. Which is more than we can say for your insurance company's login page.*
