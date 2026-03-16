@@ -1,325 +1,323 @@
-![APOA — Agentic Power of Attorney](assets/banner.png)
+[![APOA — Agentic Power of Attorney](assets/banner.png)](assets/banner.png)
 
 # 🐴 Agentic Power of Attorney (APOA)
 
 *Pronounced "ah-POH-ah" like aloha 🤙*
 
-**The authorization standard for the AI agent economy.**
+**Authorization infrastructure for AI agents.**
 
-> In January 2026, a developer named AJ Stuyvenberg [gave an AI agent access to his email, calendar, and browser](https://aaronstuyvenberg.com/posts/clawd-bought-a-car) and told it to buy him a car. The agent searched inventory, contacted dealerships, negotiated a $4,200 discount, and closed the deal. It also sent a confidential email to the wrong person — because its entire authorization model was a natural language prompt that said "prompt me before replying to anything consequential."
+> In January 2026, a developer [gave an AI agent access to his email, calendar, and browser](https://aaronstuyvenberg.com/posts/clawd-bought-a-car) and told it to buy him a car. The agent negotiated a $4,200 discount and closed the deal. It also sent a confidential email to the wrong person — because its entire authorization model was a natural language prompt that said "prompt me before replying to anything consequential."
 >
-> This is not a future problem. AI agents are already negotiating, transacting, and acting on behalf of humans — today, right now, with zero formal authorization, no audit trail, and no kill switch.
->
-> We think the infrastructure should catch up.
+> AI agents are already negotiating, transacting, and acting on behalf of humans — with zero formal authorization, no audit trail, and no kill switch. We think the infrastructure should catch up.
 
 ---
 
-## The Vision
+## The Problem
 
-Imagine telling your AI agent:
+Every agent authorization framework assumes your target service has an API. Meanwhile, your mortgage lender's web portal looks like it was built during the Bush administration. Your health insurance company will add OAuth right after they finish migrating off Internet Explorer. Your title company's "secure document center" has a password requirement of exactly 8 characters, no special characters allowed.
 
-> *"Buy me a house. Budget is $475K. Three bedrooms, good school district, within 30 minutes of the office. I need to be in by August. Handle it."*
+If every service had an API, we wouldn't need APOA. They don't. So here we are.
 
-The agent searches listings. Analyzes comps. Drafts an offer at $458K. Negotiates with the seller's agent. Coordinates the inspection. Manages the mortgage timeline. Flags exactly three things for your attention: the final offer price, the inspection results, and the closing signature.
+APOA fixes this with two things we haven't seen addressed together anywhere else:
 
-Everything else? Handled.
+**1. Browser-based agent authorization.** Your agent needs to check your mortgage rate lock. Your lender doesn't have an API. APOA authorizes a browser session where credentials come from a vault — the AI never sees them — and every action is scoped, audited, and instantly revocable.
 
-The AI capabilities are here. The authorization infrastructure isn't. That's what APOA fixes.
+**2. Natural language rules that actually do something.** Not just scopes and permissions. Rules like "never sign, submit, or commit to anything" that are machine-enforced. Rules like "alert me if any deadline is within 48 hours" that are logged and trigger callbacks. Traditional auth can't express this. APOA can.
 
----
-
-## What Is Agentic POA?
-
-There's a concept that has existed in law for *literally centuries*: power of attorney. You sign a document, you say "this person can do these things on my behalf, within these limits, until this date." Done. It works for real estate. It works for healthcare. It works for finances. Your grandmother has one. It's not complicated.
-
-Agentic Power of Attorney (APOA) is that — but for AI agents operating in the digital world.
-
-It's an open standard that defines how a human (the **Principal**) formally authorizes an AI agent (the **Agent**) to access and act within digital services (the **Services**) on their behalf — with explicit scope, time limits, and a full audit trail.
-
-Think of it as the digital equivalent of that document your grandmother has — but purpose-built for AI, designed for modern digital services, and enforceable at the protocol level.
-
-### Core Principles
-
-- **Scoped by default** — every authorization specifies exactly what the agent can and cannot do. No more "here's my entire digital life, good luck."
-- **Time-bounded** — authorizations expire. Because "forever" is not a responsible access policy.
-- **Revocable instantly** — changed your mind? One click. Done. Try doing that with a shared password.
-- **Auditable** — every action the agent takes is logged and attributable. When the agent sends an email to the wrong person, you know exactly what happened and why.
-- **Works everywhere** — API-based services, browser-based services, and everything in between. Even your insurance company's website from 2004.
-- **Legally meaningful** — designed to align with existing electronic agency law (UETA, E-SIGN) and emerging AI governance frameworks.
+![APOA Two Access Modes — API-based and Browser-based](assets/two-modes.png)
 
 ---
 
-## The Problem Today
+## SDK — Install It, It Works
 
-Here's what "agent authorization" looks like in 2026:
-
-- **Share your password** — hand your entire digital life to an AI. The Clawdbot approach. It works until it doesn't.
-- **Use an API** — great, if the service has one. Most don't. Have you *seen* your insurance company's website?
-- **Browser automation** — the AI clicks buttons and hopes nothing changes. No scoped access, no audit trail, no way to limit what it touches.
-- **Do it yourself** — which is the thing we were trying to *stop doing*
-
-The AI agent that bought a car did it with *all four* of these approaches simultaneously, held together with natural language instructions. That's not an authorization model — that's a prayer.
-
-APOA replaces prayers with infrastructure.
-
-## How It Works
-
-```
-┌──────────────┐         ┌──────────────────┐         ┌──────────────┐
-│              │         │                  │         │              │
-│  Principal   │──issues──▶  APOA Token     │──used by─▶   Agent     │
-│  (You)       │         │  (Authorization) │         │  (AI)        │
-│              │         │                  │         │              │
-└──────────────┘         └──────────────────┘         └──────┬───────┘
-                                                             │
-                                                          accesses
-                                                             │
-                                                      ┌──────▼───────┐
-                                                      │              │
-                                                      │   Service    │
-                                                      │  (MyChart,   │
-                                                      │   Anthem,    │
-                                                      │   MLS, etc.) │
-                                                      │              │
-                                                      └──────────────┘
+```bash
+npm install @apoa/core
 ```
 
-**The APOA Token** is a signed, structured authorization that contains:
+```typescript
+import { createToken, checkScope, generateKeyPair } from '@apoa/core';
 
-| Field | Description | Example |
-|---|---|---|
-| `principal` | The human granting authority | `did:apoa:juan_xyz` |
-| `agent` | The AI agent receiving authority | `did:apoa:agent_abc` |
-| `service` | The target service | `mychart.com` |
-| `scope` | What the agent can do | `["messages:read", "calendar:read"]` |
-| `constraints` | Limits on the agent's actions | `{"max_response_length": 500}` |
-| `not_before` | When authorization begins | `2026-03-01T00:00:00Z` |
-| `expires` | When authorization ends | `2026-06-01T00:00:00Z` |
-| `audit` | Logging requirements | `"all_actions"` |
+const keys = await generateKeyPair();
 
-## Real-World Scenarios
+const token = await createToken({
+  principal: { id: "did:apoa:you" },
+  agent: { id: "did:apoa:your-agent", name: "HomeBot Pro" },
+  services: [{
+    service: "nationwidemortgage.com",
+    scopes: ["rate_lock:read", "documents:read"],
+    accessMode: "browser",
+    browserConfig: {
+      allowedUrls: ["https://portal.nationwidemortgage.com/*"],
+      credentialVaultRef: "1password://vault/mortgage-portal",
+    }
+  }],
+  expires: "2026-09-01"
+}, { privateKey: keys.privateKey });
 
-Agentic POA maps directly to the categories of traditional power of attorney — but for the digital world. And here's the thing: these aren't hypothetical. These are the actual, soul-crushing, portal-logging-into situations that real people deal with *every single day.*
+checkScope(token, "nationwidemortgage.com", "rate_lock:read");
+// { allowed: true, reason: "matched scope 'rate_lock:read'" }
 
-### 🏠 Real Estate Transaction
+checkScope(token, "nationwidemortgage.com", "documents:sign");
+// { allowed: false, reason: "scope 'documents:sign' not in authorized scopes" }
+```
 
-You're buying a home. Congratulations! Here's your reward: six different web portals, none of which talk to each other, all with time-sensitive deadlines that will absolutely not remind you before they pass.
+Ten lines to a signed, scoped, time-bounded authorization token with browser-mode credential injection. Everything that Clawdbot was missing when it bought that car.
+
+The SDK handles token creation, signing, validation, scope checking, constraint enforcement, hard/soft rule enforcement, delegation with capability attenuation, chain verification, cascade revocation, and audit logging. See [`sdk/`](sdk/) for the full source and [`sdk/examples/`](sdk/examples/) for real-world scenarios.
+
+---
+
+## What Is This, Actually?
+
+There's a concept that has existed in law for *literally centuries*: power of attorney. You sign a document, you say "this person can do these things on my behalf, within these limits, until this date." Done. Your grandmother has one. It's not complicated.
+
+APOA is that — but for AI agents operating in the digital world. An open standard that defines how a human (the **Principal**) formally authorizes an AI agent (the **Agent**) to access and act within digital services (the **Services**) on their behalf — with explicit scope, time limits, and a full audit trail.
+
+![APOA Authorization Flow — Principal → Token → Agent → Service](assets/hero-flow.png)
+
+**The APOA Token** is a signed JWT that contains everything needed to understand the authorization:
+
+| Field | What It Does | Example |
+| --- | --- | --- |
+| `principal` | Who's granting authority | `did:apoa:jane_xyz` |
+| `agent` | Who's receiving authority | `did:apoa:homebot_abc` |
+| `agentProvider` | The legal entity on the hook | `HomeBot Inc.` |
+| `service` | Where the agent can go | `nationwidemortgage.com` |
+| `scope` | What the agent can do there | `["rate_lock:read", "documents:read"]` |
+| `constraints` | Hard limits | `{signing: false, data_export: false}` |
+| `accessMode` | How it connects | `"browser"` or `"api"` |
+| `browserConfig` | URL jail + vault reference | `{allowedUrls: [...], credentialVaultRef: "..."}` |
+| `rules` | Behavioral directives | `"Never sign, submit, or commit to anything"` |
+| `legal` | Jurisdiction + legal basis | `{jurisdiction: "US-CA", legalBasis: ["UETA-14"]}` |
+| `expires` | When it dies | `2026-06-15` |
+
+---
+
+## Show Me a Real Scenario
+
+You're buying a home. Congratulations! Here's your reward: four different web portals, none of which talk to each other, all with time-sensitive deadlines that will absolutely not remind you before they pass.
 
 ```yaml
 authorization:
   type: "real_estate"
-  principal: "Juan Doe"
+  principal: "Jane Doe"
   agent: "HomeBot Pro"
+  agentProvider:
+    name: "HomeBot Inc."
+    contact: "support@homebot.ai"
   services:
-    - service: "nationwidemortgage.com"
+    - service: "nationwidemortgage.com"           # No API. Browser mode.
       scope: ["rate_lock:read", "documents:read", "timeline:read"]
-    - service: "docusign.com"
+      accessMode: "browser"
+      browserConfig:
+        allowedUrls: ["https://portal.nationwidemortgage.com/*"]
+        credentialVaultRef: "1password://vault/mortgage-portal"
+        captureScreenshots: true
+        blockedActions: ["click:*sign*", "click:*submit*", "click:*approve*"]
+
+    - service: "docusign.com"                     # Has an API. API mode.
       scope: ["documents:read", "documents:flag_for_review"]
+      accessMode: "api"
       constraints:
-        signing: false  # flag only, never sign
-    - service: "acmetitle.com"
-      scope: ["closing_timeline:read", "document_status:read"]
-    - service: "redfin.com"
-      scope: ["saved_searches:read", "listing_updates:read"]
+        signing: false
+
+    - service: "acmetitle.com"                    # No API. Browser mode.
+      scope: ["closing_timeline:read", "title_search:read"]
+      accessMode: "browser"
+      browserConfig:
+        allowedUrls: ["https://portal.acmetitle.com/transaction/*"]
+        credentialVaultRef: "1password://vault/title-company"
+
+    - service: "redfin.com"                       # No API. Browser mode.
+      scope: ["saved_searches:read", "market_data:read"]
+      accessMode: "browser"
+      browserConfig:
+        allowedUrls: ["https://www.redfin.com/myredfin/*"]
+        credentialVaultRef: "1password://vault/redfin"
+        blockedActions: ["click:*offer*", "click:*tour*"]
   rules:
-    - "Alert me if any deadline is within 48 hours"
-    - "Never sign, submit, or commit to anything"
-    - "Summarize new activity daily at 8am"
-  expires: "2026-06-15"  # closing date
+    - "Alert me if any deadline is within 48 hours"          # soft — logged + callback
+    - "Never sign, submit, or commit to anything"            # hard — machine-enforced
+    - "Summarize new activity daily at 8am"                  # soft — logged
+  legal:
+    model: "provider-as-agent"
+    jurisdiction: "US-CA"
+    legalBasis: ["UETA-14", "E-SIGN"]
+  expires: "2026-06-15"
   revocable: true
 ```
+
+Four services. Three browser-based, one API. Zero signing authority. Every action logged. Instantly revocable. No passwords shared with any AI model.
 
 **Today:** You spend hours each week logging into portals, refreshing pages, and lying awake at night wondering if you missed a disclosure deadline.
 
 **With APOA:** Your agent monitors everything, alerts you to what matters, and keeps a complete audit trail — without ever having the authority to commit you to anything. And as the standard evolves toward [high-authority delegation](SPEC.md#appendix-d-future-work), the same agent that monitors your mortgage today negotiates the deal tomorrow.
 
-### 🏥 Healthcare / Medical Coordination
+More scenarios (healthcare coordination, new parent logistics) are in [EXAMPLES.md](EXAMPLES.md).
 
-Your parent has a chronic condition. You're now a project manager — except the project is keeping a human being alive, and your tools are four unrelated patient portals that were each apparently designed by someone who has never used a computer.
+---
 
-```yaml
-authorization:
-  type: "healthcare"
-  principal: "Juan Doe"
-  agent: "CareCoordinator"
-  services:
-    - service: "mychart.com"
-      scope: ["appointments:read", "test_results:read", "messages:read"]
-      constraints:
-        modify: false  # read-only, never respond to providers
-    - service: "aetna.com"
-      scope: ["claims:read", "prior_auth:read", "eob:read"]
-    - service: "cvs.com"
-      scope: ["prescriptions:read", "refill_status:read"]
-    - service: "walgreens.com"
-      scope: ["prescriptions:read", "refill_status:read"]
-  rules:
-    - "Alert me when new test results are posted"
-    - "Flag any insurance claim that's been pending more than 14 days"
-    - "Notify me 3 days before any prescription refill is due"
-    - "Never communicate with providers or approve treatments"
-  expires: "2027-02-28"
-  revocable: true
+## How Mode B Actually Works
+
+This is the part that gets hand-waved in most authorization discussions, because it's genuinely hard. Here's how APOA approaches it.
+
+![APOA Mode B — Secure Credential Injection via Vault](assets/mode-b-flow.png)
+
+```
+1. Agent runtime receives task: "check Jane's rate lock status"
+2. Runtime calls authorize(token, "nationwidemortgage.com", "rate_lock:read")
+   → authorized: true
+3. Runtime reads browserConfig from the token:
+   → allowedUrls, credentialVaultRef, blockedActions
+4. Runtime requests credential injection from vault
+   → Vault injects credentials via encrypted channel
+   → AI model NEVER sees the credentials
+5. Agent navigates mortgage portal within URL restrictions
+6. Every action logged to audit trail with URL + screenshot
+7. Session terminates after maxSessionDuration (30 min)
 ```
 
-**Today:** You're logging into four different portals every week, terrified of missing a result or letting a prescription lapse. You've become a full-time unpaid medical secretary. *Nobody trained you for this.*
+The SDK handles steps 2 and 6 (authorization + audit). The credential vault handles step 4 (injection). The browser runtime handles steps 3, 5, and 7. Nobody handles the credentials except the vault.
 
-**With APOA:** Your agent watches everything, connects the dots across providers and pharmacies, and makes sure nothing falls through the cracks — while never having the authority to make a medical decision. It's a healthcare coordinator that actually coordinates.
+---
 
-### 👶 New Parent Logistics
+## Delegation Chains (They Only Shrink)
 
-You just had a baby. Mazel tov! Now here's a list of seventeen things you need to do within thirty days, all requiring different websites, none of which you can remember the password to, and you haven't slept since Tuesday.
+When your agent delegates to a sub-agent, permissions can only get *narrower*. That's not a guideline — it's cryptographically enforced.
 
-```yaml
-authorization:
-  type: "limited_special"
-  principal: "Juan Doe"
-  agent: "NewParentHelper"
-  services:
-    - service: "anthem.com"
-      scope: ["dependents:read", "enrollment:read", "claims:read"]
-      constraints:
-        modify_enrollment: false  # track status only
-    - service: "brightwheel.com"
-      scope: ["waitlist:read", "applications:read", "application_status:read"]
-    - service: "zocdoc.com"
-      scope: ["appointments:read", "availability:search"]
-      constraints:
-        booking: false  # find options, human books
-    - service: "ssa.gov"
-      scope: ["application_status:read"]
-  rules:
-    - "Alert me if insurance enrollment deadline is within 7 days"
-    - "Check daycare waitlist position daily and notify on any movement"
-    - "Find available pediatricians accepting our insurance within 10 miles"
-    - "Track Social Security card application status"
-    - "Never submit applications or make commitments on my behalf"
-  expires: "2026-06-01"  # 90 days post-birth
-  revocable: true
+![APOA Delegation Chains — Permissions Only Shrink](assets/delegation-chain.png)
+
+```
+Parent Token (you → HomeBot Pro)
+  scope: [rate_lock:read, documents:read, timeline:read, conditions:read]
+
+  └── Child Token (HomeBot Pro → DocReviewer)
+        scope: [documents:read]                    ← subset only
+        expires: ≤ parent expiration               ← cannot outlive parent
+        rules: parent rules + additional            ← can only add, not remove
+        delegation_depth: decremented              ← eventually hits 0
 ```
 
-**Today:** You're filling out the same personal information on a dozen different portals at 3am with one hand while holding a baby in the other, praying you don't miss an enrollment window that — and this is the fun part — *nobody told you about.*
+Revoke the parent? Every child in the chain dies instantly. That's cascade revocation, and it's the default because leaving orphaned child tokens alive is almost never what you want.
 
-**With APOA:** Your agent tracks every deadline, monitors every waitlist, and surfaces exactly what needs your attention — so you can focus on the tiny human who, let's be honest, is not going to focus on any of this themselves.
+---
 
-## Why Existing Solutions Fall Short
+## Why Not Just Use...
 
-Now, you might be thinking: "Don't we already have solutions for this?" And to that I say: *kind of.* In the same way that a horse-drawn carriage is *kind of* a car.
+| Approach | APIs? | Browsers? | Scoped? | Revocable? | Auditable? | Delegation? | Legal? |
+| --- | --- | --- | --- | --- | --- | --- | --- |
+| OAuth 2.0 | ✅ | ❌ | ✅ | ✅ | Partial | ❌ | ❌ |
+| MCP Auth | ✅ | ❌ | ✅ | ❌ | Partial | ❌ | ❌ |
+| ZCAP-LD | ✅ | ❌ | ✅ | ✅ | ❌ | ✅ | ❌ |
+| Browser automation | ❌ | ✅ | ❌ | ❌ | ❌ | ❌ | ❌ |
+| Password sharing | ❌ | ✅ | ❌ | ❌ | ❌ | ❌ | ❌ |
+| 1Password Autofill | ❌ | ✅ | ❌ | ❌ | Partial | ❌ | ❌ |
+| **APOA** | **✅** | **✅** | **✅** | **✅** | **✅** | **✅** | **✅** |
 
-| Approach | Works with APIs? | Works without APIs? | Scoped? | Time-bounded? | Revocable? | Auditable? | Delegation chains? | Legally meaningful? |
-|---|---|---|---|---|---|---|---|---|
-| OAuth 2.0 / OIDC | ✅ | ❌ | ✅ | ✅ | ✅ | Partial | ❌ | ❌ |
-| MCP Auth | ✅ | ❌ | ✅ | ❌ | ❌ | Partial | ❌ | ❌ |
-| W3C Verifiable Credentials | ✅ | ❌ | ❌ | ✅ | Partial | ❌ | ❌ | ❌ |
-| ZCAP-LD | ✅ | ❌ | ✅ | ✅ | ✅ | ❌ | ✅ | ❌ |
-| Agent frameworks (Clawdbot, etc.) | ❌ | ✅ | ❌ | ❌ | ❌ | ❌ | ❌ | ❌ |
-| Browser automation | ❌ | ✅ | ❌ | ❌ | ❌ | ❌ | ❌ | ❌ |
-| Password sharing | ❌ | ✅ | ❌ | ❌ | ❌ | ❌ | ❌ | ❌ |
-| 1Password Agent Autofill | ❌ | ✅ | ❌ | ❌ | ❌ | Partial | ❌ | ❌ |
-| **Agentic POA** | **✅** | **✅** | **✅** | **✅** | **✅** | **✅** | **✅** | **✅** |
+ZCAP-LD is the closest — we build on it directly. But it doesn't address browser-based services, audit requirements, natural language rules, or legal alignment. That's the gap.
 
-A few things worth noting: VCs are an *identity* layer — they answer "what is this entity?" not "what can this entity do?" ZCAP-LD is the closest existing standard to APOA and we build on it directly, but it doesn't address browser-based services, audit requirements, or legal alignment. Agent frameworks like Clawdbot are where the actual action is happening right now — and they have essentially zero authorization infrastructure. That's the gap.
+---
+
+## Prior Art & Related Work
+
+APOA was designed in February 2026. We later found independent work arriving at similar conclusions from different directions — which is what you want to see when you're working on a standard.
+
+**IETF draft-vattaparambil-positioning-of-poa-01 (October 2023)** — researchers at Lulea University of Technology applied the same Power of Attorney metaphor to IoT device authorization. Their principal-agent-delegation model for Cyber Physical Systems is strikingly parallel, though they target smart devices rather than AI agents. APOA was developed independently; the convergence validates the conceptual model.
+
+**Google DeepMind, "Intelligent AI Delegation" (February 2026)** — Tomašev, Franklin, and Osindero proposed delegation with authority transfer, accountability chains, and capability attenuation via Delegation Capability Tokens. Their paper explicitly flagged MCP's missing policy layer for deep delegation chains — the gap APOA was designed to fill. Developed concurrently and independently.
+
+**MCP 2026 Roadmap (March 2026)** — the official roadmap lists deeper security and authorization as a priority, with active SEPs for DPoP and Workload Identity Federation. APOA is designed as a complementary policy layer above MCP, not a replacement.
+
+**IETF Agent Auth Drafts (2025-2026)** — multiple active Internet-Drafts tackle agent delegation within OAuth. These address API-based authorization. APOA's Mode B addresses the complementary problem: services without APIs.
+
+---
 
 ## Technical Foundation
 
-Alright, for the engineers in the room who've been patiently waiting for the acronyms — here you go. APOA builds on proven standards rather than reinventing the wheel, because the world has enough competing standards:
+APOA builds on proven standards because the world has enough competing ones:
 
-- **JWT (RFC 7519)** — token format for authorization instruments
-- **OAuth 2.1** — authorization flows for API-based services
-- **W3C Verifiable Credentials** — portable, cryptographically signed authorization
-- **ZCAP-LD** — capability-based delegation with natural attenuation (each delegation can only reduce, never expand, permissions)
-- **W3C DIDs** — decentralized identity for both principals and agents
-- **Web Bot Auth** (emerging) — agent identification for browser-based services
+* **JWT (RFC 7519)** — token format
+* **OAuth 2.1** — API-based authorization flows
+* **W3C Verifiable Credentials** — portable, signed authorization packaging
+* **ZCAP-LD** — capability attenuation model for delegation chains
+* **W3C DIDs** — principal and agent identity
+* **Web Bot Auth** (emerging) — agent identification for browser-based services
 
 See [SPEC.md](SPEC.md) for the full technical specification. It's riveting. Well, it's thorough.
 
-## Where APOA Fits in Your Stack
-
-APOA isn't a replacement for the tools you're already using — it's the authorization layer they're all missing. Here's how it integrates with the current AI ecosystem:
-
-### Consumer AI platforms (ChatGPT, Claude, Gemini)
-
-Today, when you connect Claude to your email via MCP or give ChatGPT a plugin, you grant permissions through OAuth popups — one service at a time, with no unified view of what you've authorized. APOA sits above this as the policy layer. One authorization document governs everything the agent can touch: which services, which scopes, what's off-limits, when it expires. The platform enforces it. You get a single dashboard instead of a trail of forgotten OAuth grants.
-
-### Agentic coding tools (Claude Code, Codex, Cursor agents)
-
-Claude Code can read your files, run commands, and make network requests. The authorization model today is: you launched it, so it can do whatever. APOA would let you scope it — read/write only in this repo, no network access except npm and GitHub, no touching ~/.ssh or ~/.aws. The [confirmation tiers](SPEC.md#appendix-d-future-work) map naturally: autonomous for reading and writing code, require approval for running tests, require explicit confirmation for pushing to main.
-
-### Autonomous agent frameworks (OpenClaw, AutoGPT, CrewAI)
-
-This is where the need is most urgent. These frameworks give AI persistent access to your email, browser, and calendar. The current authorization model is a natural language instruction — literally "ask me before doing anything important." APOA replaces that with machine-enforceable authorization. The framework reads the APOA token on startup and knows exactly what it can access, what requires confirmation, and what's forbidden. Every action is logged. The LLM doesn't self-police — the infrastructure does.
-
-### MCP servers (the connector layer)
-
-MCP is becoming the standard for connecting AI to external services. Each MCP server currently handles its own auth. APOA sits above MCP as the policy language — MCP handles *how* to connect to Gmail, APOA handles *what the agent is allowed to do* in Gmail. An APOA-compliant MCP server checks the token before every tool call, verifies the action is in scope, logs it, and rejects anything that exceeds authorization. This is where integration with agent infrastructure providers like [Arcade.dev](https://arcade.dev) comes in — they build the runtime, APOA provides the policy.
-
-### Agent-to-agent delegation
-
-When your agent needs to delegate a subtask to another agent — say, your real estate agent hands off the inspection scheduling to a specialized service — APOA's delegation chains handle this natively. Each delegation can only *reduce* permissions, never expand them. The chain is cryptographically verifiable end-to-end.
-
-### The adoption path
-
-APOA doesn't need top-down adoption from OpenAI or Anthropic on day one. The realistic path is bottom-up:
-
-1. **Agent frameworks** adopt it first — they have the most urgent need and the least existing auth infrastructure
-2. **MCP server providers** integrate it as their policy format — every platform using those servers gets APOA for free
-3. **Consumer platforms** adopt it because the ecosystem already speaks APOA — easier to join a standard than invent a new one
+---
 
 ## Project Status
 
-🚧 **Early stage — spec in active development**
-
-We're building this in the open, because that's how standards should work. The specification is a working draft and will evolve based on community feedback, security review, and the inevitable "have you considered..." comments that make everything better.
-
-### Roadmap
+**Spec v0.1 complete. SDK shipped. Seeking community feedback.**
 
 - [x] Problem statement and concept definition
 - [x] Landscape analysis of existing standards and gaps
-- [ ] Draft specification v0.1
-- [ ] Reference implementation (SDK)
+- [x] Draft specification v0.1
+- [x] Reference implementation (TypeScript SDK — [`@apoa/core`](sdk/))
+- [ ] Community feedback and iteration
 - [ ] Consumer product prototype (agent authorization dashboard)
 - [ ] Security audit
+- [ ] MCP integration proposal (Spec Enhancement Proposal)
 - [ ] Formal standards body submission
+
+---
 
 ## Get Involved
 
-This is an open standard. It will only work if actual humans — not just the three of us — help shape it.
+* **Install the SDK** — `npm install @apoa/core` and run the [quickstart](sdk/examples/quickstart.ts)
+* **Read the spec** — [SPEC.md](SPEC.md) is the working draft
+* **Open an issue** — critiques and "this will never work because..." are welcome
+* **Join the discussion** — [Discussions tab](../../discussions) for broader conversations
+* **Build with it** — if you're working on AI agents, browser automation, or identity, we want your input
 
-- **Read the spec** — [SPEC.md](SPEC.md) is the working draft
-- **Open an issue** — questions, critiques, and "this will never work because..." are all welcome
-- **Join the discussion** — [Discussions tab](../../discussions) for broader conversations
-- **Build with it** — if you're working on AI agents, browser automation, or identity, we genuinely want your input
-- **Spread the word** — the more people thinking about this problem, the less likely we end up with twelve competing solutions (see: [XKCD 927](https://xkcd.com/927/))
+---
 
 ## FAQ
 
-**Is this a real legal power of attorney?**
-No. And this is important, so let me say it clearly: AI systems cannot legally hold power of attorney under any current jurisdiction. APOA is a *technical* authorization standard that borrows the *conceptual framework* of power of attorney — scoped delegation, bounded authority, principal-agent relationship — and applies it to digital agent authorization. That said, it's designed to align with existing electronic agency law (UETA, E-SIGN) and could serve as the technical foundation for future legal recognition. But we're not lawyers. *Please don't sue us.*
+<details>
+<summary><strong>Is this a real legal power of attorney?</strong></summary>
 
-**How is this different from OAuth?**
-OAuth handles delegated authorization for API-based services. Which is great — if you live in a world where every service has an API. You do not live in that world. APOA extends the model to services without APIs (via browser-based authorization), adds agent-specific features (delegation depth, intent binding, agent identity verification), and wraps everything in a legally meaningful framework. For API-based services, APOA uses OAuth under the hood. It's not a replacement, it's a completion.
+No. AI systems cannot legally hold power of attorney under any jurisdiction. APOA is a *technical* authorization standard that borrows the *conceptual framework* — scoped delegation, bounded authority, principal-agent relationship. It's designed to align with existing electronic agency law (UETA, E-SIGN) and could serve as the technical foundation for future legal recognition. But we're not lawyers. *Please don't sue us.*
+</details>
 
-**What about security? Isn't this just fancy password sharing?**
-No, and I take personal offense at the suggestion. APOA never requires sharing credentials with the agent. For API-based services, it uses standard OAuth token flows. For browser-based services, it leverages secure credential injection (where credentials are injected into browser contexts without the AI model ever seeing them). The principal retains full control, with instant revocation and complete audit trails. It's the *opposite* of password sharing. It's password *never-sharing.*
+<details>
+<summary><strong>How is this different from OAuth?</strong></summary>
 
-**Why "Power of Attorney"?**
-Because it's the best existing mental model for what this is: one entity formally authorizing another to act on their behalf, within defined boundaries, for a specific purpose and duration. Your grandmother understands what a power of attorney is. That intuition maps directly to what we need for AI agent authorization. We considered calling it "Agentic Delegated Authorization Framework" but we wanted people to actually read the README.
+OAuth handles delegated authorization for API-based services. Which is great — if you live in a world where every service has an API. You do not live in that world. APOA extends the model to services without APIs (via browser-based authorization with secure credential injection), adds agent-specific features (delegation chains, natural language rules, intent binding), and wraps everything in a legally meaningful framework. For API-based services, APOA uses OAuth under the hood. It's not a replacement, it's a completion.
+</details>
 
-**Is there an APOA token or cryptocurrency?**
-No. God, no. There is no coin, no token, no NFT, no blockchain-based financial product, and no airdrop. If someone is selling you one, they are scamming you and we would appreciate you letting us know so we can make their life difficult. The word "token" in this project refers exclusively to a signed JWT authorization document. It has the market value of a JSON file, which is zero dollars.
+<details>
+<summary><strong>Isn't this just fancy password sharing?</strong></summary>
 
-**Isn't this just a Verifiable Credential?**
-This is a great question and we're glad you asked it instead of just posting "skill issue, use VCs" on Hacker News. Verifiable Credentials answer the question *"what is this entity?"* — they make assertions about identity. APOA answers a different question: *"what can this agent DO?"* — it grants bounded authority with scoped permissions, capability attenuation, delegation chains, constraint enforcement, audit trails, and revocation cascading. The W3C community has debated this exact boundary extensively, and the consensus is clear: using VCs as permission tokens is dangerous because it mixes claims with authorization, and developers will implement it wrong. That's why ZCAP-LD exists as a separate spec. APOA follows the same principle — a VC can *package* an APOA token for portability (and we support this in the spec), but the authorization semantics are what APOA defines and what VCs alone don't provide. Think of it this way: "isn't OAuth just HTTP?" Technically yes, but that's not a useful answer.
+I take personal offense at the suggestion. APOA never shares credentials with the agent. For browser-based services, it uses secure credential injection — architecturally aligned with 1Password's Agentic Autofill — where a vault injects credentials into the browser session through an encrypted channel. The AI model never sees them. The APOA token authorizes the injection and scopes the session. The vault handles the credentials. It's the *opposite* of password sharing. It's password *never-sharing.*
+</details>
+
+<details>
+<summary><strong>Why "Power of Attorney"?</strong></summary>
+
+Because it's the best existing mental model: one entity formally authorizing another to act on their behalf, within defined boundaries, for a specific purpose and duration. Your grandmother understands what a power of attorney is. That intuition maps directly to what we need for AI agent authorization. We considered "Agentic Delegated Authorization Framework" but we wanted people to actually read the README.
+</details>
+
+<details>
+<summary><strong>Isn't this just a Verifiable Credential?</strong></summary>
+
+VCs answer "what is this entity?" — assertions about identity. APOA answers "what can this agent DO?" — bounded authority with scoped permissions, capability attenuation, delegation chains, constraint enforcement, audit trails, and revocation cascading. The W3C community debated this boundary extensively; the consensus is clear: using VCs as permission tokens mixes claims with authorization, and developers will implement it wrong. That's why ZCAP-LD exists as a separate spec. A VC can *package* an APOA token for portability, but the authorization semantics are what APOA defines and what VCs alone don't provide.
+</details>
+
+<details>
+<summary><strong>Is there an APOA token or cryptocurrency?</strong></summary>
+
+No. God, no. There is no coin, no NFT, no blockchain-based financial product, and no airdrop. The word "token" in this project refers exclusively to a signed JWT authorization document. It has the market value of a JSON file, which is zero dollars. If someone is selling you one, they are scamming you. Please [open an issue](../../issues) so we can make their life difficult.
+</details>
+
+---
 
 ## ⚠️ No Tokens. No Coins. No NFTs.
 
-Let us be unambiguous about this: **Agentic POA has no cryptocurrency, no token, no coin, no NFT, and no blockchain-based financial product of any kind.** Not now. Not ever.
+**Agentic POA has no cryptocurrency, no token, no coin, no NFT, and no blockchain-based financial product of any kind.** Not now. Not ever. If someone claims otherwise — **it is a scam.**
 
-If someone is selling you an "APOA token," a "Proxy coin," or any financial instrument claiming to be associated with this project — **it is a scam.** We are not affiliated with it. We did not authorize it. We would like it to stop.
-
-APOA is an open technical standard. The only "token" in this project is a signed authorization document — a JWT. It is not tradeable. It is not an investment. It will not "go to the moon." It goes to your mortgage lender's web portal, which is considerably less exciting but *significantly more useful.*
-
-If you see anyone attempting to sell a financial product using the APOA or Proxy name, please [open an issue](../../issues) so we can address it.
+---
 
 ## License
 
@@ -327,12 +325,10 @@ Apache 2.0 — see [LICENSE](LICENSE).
 
 ## Origin
 
-Agentic Power of Attorney was coined in February 2026 to address the critical gap in AI agent authorization infrastructure — the absence of a universal standard for delegating bounded digital authority from humans to AI agents. Its mascot is Proxy, named for the oldest meaning of the word: one authorized to act on another's behalf.
-
-*Here's your moment of zen.*
+Agentic Power of Attorney was coined in February 2026 to address the absence of a universal standard for delegating bounded digital authority from humans to AI agents. Its mascot is Proxy, named for the oldest meaning of the word: one authorized to act on another's behalf.
 
 ---
 
----
+![Proxy the Pony](assets/proxy.png)
 
 🐴 *Meet **Proxy** — a [Pony of the Americas](https://en.wikipedia.org/wiki/Pony_of_the_Americas). Calm, intelligent, and built to earn your trust. Which is more than we can say for your insurance company's login page.*
