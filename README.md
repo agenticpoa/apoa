@@ -218,6 +218,12 @@ ZCAP-LD is the closest — we build on it directly. But it doesn't address brows
 
 ---
 
+## Ecosystem
+
+- [Jean-Claw Van Damme](https://github.com/agenticpoa/jean-claw-van-damme) — Authorization gatekeeper for OpenClaw agents ([ClawHub](https://clawhub.ai/agenticpoa/jean-claw-van-damme))
+
+---
+
 ## Prior Art & Related Work
 
 APOA was designed in February 2026. We later found independent work arriving at similar conclusions from different directions — which is what you want to see when you're working on a standard.
