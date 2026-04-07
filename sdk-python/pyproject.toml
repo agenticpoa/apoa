@@ -1,0 +1,42 @@
+[project]
+name = "apoa"
+version = "0.1.0"
+description = "Python SDK for the Agentic Power of Attorney (APOA) standard"
+requires-python = ">=3.11"
+license = "Apache-2.0"
+readme = "README.md"
+authors = [
+    { name = "Agentic POA", email = "agenticpoa@users.noreply.github.com" },
+]
+keywords = ["authorization", "ai-agents", "delegation", "jwt", "security"]
+classifiers = [
+    "Development Status :: 3 - Alpha",
+    "Intended Audience :: Developers",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Programming Language :: Python :: 3.13",
+    "Topic :: Security",
+    "Topic :: Software Development :: Libraries",
+    "Typing :: Typed",
+]
+dependencies = ["PyJWT[crypto]>=2.8.0"]
+
+[project.optional-dependencies]
+dev = ["pytest>=8.0.0"]
+
+[project.urls]
+Homepage = "https://github.com/agenticpoa/apoa"
+Documentation = "https://github.com/agenticpoa/apoa/tree/main/sdk-python"
+Repository = "https://github.com/agenticpoa/apoa"
+Issues = "https://github.com/agenticpoa/apoa/issues"
+
+[build-system]
+requires = ["setuptools>=68.0"]
+build-backend = "setuptools.build_meta"
+
+[tool.setuptools.packages.find]
+include = ["apoa*"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]

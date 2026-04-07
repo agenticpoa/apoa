@@ -1,0 +1,24 @@
+{
+  "jwt": "eyJhbGciOiJFZERTQSJ9.eyJqdGkiOiI4ZTI4YmY3Zi1hYzFmLTRhYTMtYjkxYS0xZjdkZTZhN2ZlNzkiLCJpc3MiOiJkaWQ6YXBvYTphbGljZSIsImF1ZCI6WyJuYXRpb253aWRlbW9ydGdhZ2UuY29tIiwiZG9jdXNpZ24uY29tIl0sImlhdCI6MTc3NTMyMTYyOSwiZXhwIjoxNzg4MjIwODAwLCJkZWZpbml0aW9uIjp7InByaW5jaXBhbCI6eyJpZCI6ImRpZDphcG9hOmFsaWNlIiwibmFtZSI6IkFsaWNlIn0sImFnZW50Ijp7ImlkIjoiZGlkOmFwb2E6aG9tZWJvdCIsIm5hbWUiOiJIb21lQm90IFBybyJ9LCJhZ2VudFByb3ZpZGVyIjp7Im5hbWUiOiJIb21lQm90IEluYy4iLCJjb250YWN0Ijoic3VwcG9ydEBob21lYm90LmFpIn0sInNlcnZpY2VzIjpbeyJzZXJ2aWNlIjoibmF0aW9ud2lkZW1vcnRnYWdlLmNvbSIsInNjb3BlcyI6WyJyYXRlX2xvY2s6cmVhZCIsImRvY3VtZW50czpyZWFkIl0sImNvbnN0cmFpbnRzIjp7InNpZ25pbmciOmZhbHNlLCJkYXRhX2V4cG9ydCI6ZmFsc2V9LCJhY2Nlc3NNb2RlIjoiYnJvd3NlciIsImJyb3dzZXJDb25maWciOnsiYWxsb3dlZFVybHMiOlsiaHR0cHM6Ly9wb3J0YWwubmF0aW9ud2lkZW1vcnRnYWdlLmNvbS8qIl0sImNyZWRlbnRpYWxWYXVsdFJlZiI6IjFwYXNzd29yZDovL3ZhdWx0L21vcnRnYWdlLXBvcnRhbCIsIm1heFNlc3Npb25EdXJhdGlvbiI6MTgwMCwiY2FwdHVyZVNjcmVlbnNob3RzIjp0cnVlfX0seyJzZXJ2aWNlIjoiZG9jdXNpZ24uY29tIiwic2NvcGVzIjpbImRvY3VtZW50czpyZWFkIl0sImFjY2Vzc01vZGUiOiJhcGkifV0sInJ1bGVzIjpbeyJpZCI6Im5vLXNpZ25pbmciLCJkZXNjcmlwdGlvbiI6Ik5ldmVyIHNpZ24gYW55dGhpbmciLCJlbmZvcmNlbWVudCI6ImhhcmQifSx7ImlkIjoiZGVhZGxpbmUtYWxlcnQiLCJkZXNjcmlwdGlvbiI6IkFsZXJ0IGlmIGRlYWRsaW5lIHdpdGhpbiA0OCBob3VycyIsImVuZm9yY2VtZW50Ijoic29mdCJ9XSwiZXhwaXJlcyI6IjIwMjYtMDktMDFUMDA6MDA6MDBaIiwibGVnYWwiOnsibW9kZWwiOiJwcm92aWRlci1hcy1hZ2VudCIsImp1cmlzZGljdGlvbiI6IlVTLUNBIiwibGVnYWxCYXNpcyI6WyJVRVRBLTE0Il19LCJtZXRhZGF0YSI6eyJzb3VyY2UiOiJ0cy1zZGstZml4dHVyZSIsInZlcnNpb24iOjF9fX0.yeIpun0qXPBC-kgk8ZLr6h-JUynheSTZCXU_a3Z4UoMvL_TwBTzPinMlhqsF3jJmUbe67jdi6LwLQl5ZtzCVDw",
+  "publicKeyJwk": {
+    "key_ops": [
+      "verify"
+    ],
+    "ext": true,
+    "crv": "Ed25519",
+    "x": "8yuScDr46yfzof780IbgQ-_w51AhY_WkVDv4uxSlpUs",
+    "kty": "OKP"
+  },
+  "expected": {
+    "principalId": "did:apoa:alice",
+    "agentName": "HomeBot Pro",
+    "services": [
+      "nationwidemortgage.com",
+      "docusign.com"
+    ],
+    "agentProviderName": "HomeBot Inc.",
+    "jurisdiction": "US-CA",
+    "constraintSigning": false,
+    "browserConfigVaultRef": "1password://vault/mortgage-portal"
+  }
+}

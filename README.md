@@ -28,7 +28,9 @@ APOA fixes this with two things we haven't seen addressed together anywhere else
 
 ---
 
-## SDK — Install It, It Works
+## SDKs — Install It, It Works
+
+### TypeScript
 
 ```bash
 npm install @apoa/core
@@ -61,9 +63,46 @@ checkScope(token, "nationwidemortgage.com", "documents:sign");
 // { allowed: false, reason: "scope 'documents:sign' not in authorized scopes" }
 ```
 
-Ten lines to a signed, scoped, time-bounded authorization token with browser-mode credential injection. Everything that Clawdbot was missing when it bought that car.
+### Python
 
-The SDK handles token creation, signing, validation, scope checking, constraint enforcement, hard/soft rule enforcement, delegation with capability attenuation, chain verification, cascade revocation, and audit logging. See [`sdk/`](sdk/) for the full source and [`sdk/examples/`](sdk/examples/) for real-world scenarios.
+```bash
+pip install apoa
+```
+
+```python
+from apoa import (
+    APOADefinition, Agent, BrowserSessionConfig, Principal,
+    ServiceAuthorization, create_client, generate_key_pair,
+)
+
+private_key, public_key = generate_key_pair()
+client = create_client(default_private_key=private_key)
+
+token = client.create_token(APOADefinition(
+    principal=Principal(id="did:apoa:you"),
+    agent=Agent(id="did:apoa:your-agent", name="HomeBot Pro"),
+    services=[ServiceAuthorization(
+        service="nationwidemortgage.com",
+        scopes=["rate_lock:read", "documents:read"],
+        access_mode="browser",
+        browser_config=BrowserSessionConfig(
+            allowed_urls=["https://portal.nationwidemortgage.com/*"],
+            credential_vault_ref="1password://vault/mortgage-portal",
+        ),
+    )],
+    expires="2026-09-01",
+))
+
+result = client.authorize(token, "nationwidemortgage.com", "rate_lock:read")
+# AuthorizationResult(authorized=True, ...)
+
+result = client.authorize(token, "nationwidemortgage.com", "documents:sign")
+# AuthorizationResult(authorized=False, reason="scope 'documents:sign' not in authorized scopes")
+```
+
+Both SDKs produce and consume the same JWT tokens -- a token signed in TypeScript validates in Python and vice versa.
+
+The SDKs handle token creation, signing, validation, scope checking, constraint enforcement, hard/soft rule enforcement, delegation with capability attenuation, chain verification, cascade revocation, and audit logging. See [`sdk/`](sdk/) for TypeScript and [`sdk-python/`](sdk-python/) for Python.
 
 ---
 
@@ -255,12 +294,13 @@ See [SPEC.md](SPEC.md) for the full technical specification. It's riveting. Well
 
 ## Project Status
 
-**Spec v0.1 complete. SDK shipped. Seeking community feedback.**
+**Spec v0.1 complete. SDKs shipped. Seeking community feedback.**
 
 - [x] Problem statement and concept definition
 - [x] Landscape analysis of existing standards and gaps
 - [x] Draft specification v0.1
 - [x] Reference implementation (TypeScript SDK — [`@apoa/core`](sdk/))
+- [x] Python SDK — [`apoa`](sdk-python/) (cross-SDK compatible)
 - [ ] Community feedback and iteration
 - [ ] Consumer product prototype (agent authorization dashboard)
 - [ ] Security audit
@@ -271,7 +311,7 @@ See [SPEC.md](SPEC.md) for the full technical specification. It's riveting. Well
 
 ## Get Involved
 
-* **Install the SDK** — `npm install @apoa/core` and run the [quickstart](sdk/examples/quickstart.ts)
+* **Install the SDK** — `npm install @apoa/core` (TypeScript) or `pip install apoa` (Python)
 * **Read the spec** — [SPEC.md](SPEC.md) is the working draft
 * **Open an issue** — critiques and "this will never work because..." are welcome
 * **Join the discussion** — [Discussions tab](../../discussions) for broader conversations
