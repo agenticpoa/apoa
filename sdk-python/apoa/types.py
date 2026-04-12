@@ -242,6 +242,6 @@ class ValidationOptions:
     public_key: Any | None = None
     key_resolver: Any | None = None  # object with resolve(kid) -> key | None
     public_key_resolver: Callable[[str], Any] | None = None  # issuer -> key
-    check_revocation: bool = False
+    check_revocation: bool = True
     revocation_store: Any | None = None  # RevocationStore
     clock_skew: int = 30

@@ -45,11 +45,35 @@ def delegate(
     child_depth = current_depth + 1
     child_metadata = {**(child_def.metadata or {}), "_delegationDepth": child_depth}
 
+    # Inherit parent's false constraints into child services.
+    # If parent says { signing: false }, the child MUST carry that constraint
+    # even if the delegation definition omits it. Otherwise the child's
+    # authorize() would skip the constraint check entirely (privilege escalation).
+    inherited_services = []
+    for child_svc in child_def.services:
+        parent_svc = next((s for s in parent_def.services if s.service == child_svc.service), None)
+        if parent_svc and parent_svc.constraints:
+            inherited = {k: v for k, v in parent_svc.constraints.items() if v is False}
+            if inherited:
+                merged_constraints = {**inherited, **(child_svc.constraints or {})}
+                inherited_services.append(ServiceAuthorization(
+                    service=child_svc.service,
+                    scopes=child_svc.scopes,
+                    constraints=merged_constraints,
+                    access_mode=child_svc.access_mode,
+                    browser_config=child_svc.browser_config,
+                    api_config=child_svc.api_config,
+                ))
+            else:
+                inherited_services.append(child_svc)
+        else:
+            inherited_services.append(child_svc)
+
     full_definition = APOADefinition(
         principal=parent_def.principal,
         agent=child_def.agent,
         agent_provider=parent_def.agent_provider,
-        services=child_def.services,
+        services=inherited_services,
         rules=merged_rules if merged_rules else None,
         expires=child_def.expires or parent_def.expires,
         revocable=parent_def.revocable,
@@ -59,8 +83,8 @@ def delegate(
         legal=parent_def.legal,
     )
 
-    child_token = create_token(full_definition, options)
-    child_token.parent_token = parent_token.jti
+    # Pass parent_token_id so it's included in the signed JWT payload
+    child_token = create_token(full_definition, options, parent_token_id=parent_token.jti)
     return child_token
 
 

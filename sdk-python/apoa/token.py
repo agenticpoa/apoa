@@ -367,7 +367,7 @@ def _validate_metadata(metadata: dict[str, Any]) -> None:
 # --- Public API ---
 
 
-def create_token(definition: APOADefinition, options: SigningOptions) -> APOAToken:
+def create_token(definition: APOADefinition, options: SigningOptions, parent_token_id: str | None = None) -> APOAToken:
     """Create a signed APOA token from a definition."""
     # Validate metadata
     if definition.metadata:
@@ -380,13 +380,17 @@ def create_token(definition: APOADefinition, options: SigningOptions) -> APOATok
 
     # Build JWT payload
     expires_dt = _to_datetime(definition.expires)
+    serialized_def = _serialize_definition(definition)
+    if parent_token_id:
+        serialized_def["parentToken"] = parent_token_id
+
     payload: dict[str, Any] = {
         "jti": jti,
         "iss": issuer,
         "aud": audience,
         "iat": math.floor(issued_at.timestamp()),
         "exp": math.floor(expires_dt.timestamp()),
-        "definition": _serialize_definition(definition),
+        "definition": serialized_def,
     }
 
     if definition.not_before is not None:
@@ -409,6 +413,7 @@ def create_token(definition: APOADefinition, options: SigningOptions) -> APOATok
         signature=raw.split(".")[2],
         issuer=issuer,
         audience=audience,
+        parent_token=parent_token_id,
         raw=raw,
     )
 

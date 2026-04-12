@@ -47,11 +47,33 @@ export async function delegate(
     _delegationDepth: childDepth,
   };
 
+  // Inherit parent's false constraints into child services.
+  // If parent says { signing: false }, the child MUST carry that constraint
+  // even if the delegation definition omits it. Otherwise the child's
+  // authorize() would skip the constraint check entirely (privilege escalation).
+  const inheritedServices = childDef.services.map((childSvc) => {
+    const parentSvc = parentDef.services.find((s) => s.service === childSvc.service);
+    if (!parentSvc?.constraints) return childSvc;
+
+    const inherited: Record<string, import('../types.js').ConstraintValue> = {};
+    for (const [key, value] of Object.entries(parentSvc.constraints)) {
+      if (value === false) {
+        inherited[key] = false;
+      }
+    }
+    if (Object.keys(inherited).length === 0) return childSvc;
+
+    return {
+      ...childSvc,
+      constraints: { ...inherited, ...childSvc.constraints },
+    };
+  });
+
   const fullDefinition: APOADefinition = {
     principal: parentDef.principal, // Inherited — cannot be overridden
     agent: childDef.agent,
     agentProvider: parentDef.agentProvider,
-    services: childDef.services,
+    services: inheritedServices,
     rules: mergedRules.length > 0 ? mergedRules : undefined,
     expires: childDef.expires ?? parentDef.expires,
     revocable: parentDef.revocable,
@@ -61,11 +83,8 @@ export async function delegate(
     legal: parentDef.legal,
   };
 
-  // Create the child token
-  const childToken = await createToken(fullDefinition, options);
-
-  // Set parentToken reference
-  childToken.parentToken = parentToken.jti;
+  // Pass parentTokenId so it's included in the signed JWT payload
+  const childToken = await createToken(fullDefinition, options, parentToken.jti);
 
   return childToken;
 }

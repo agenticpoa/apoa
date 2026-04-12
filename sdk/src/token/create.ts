@@ -9,7 +9,8 @@ import { signToken } from './sign.js';
  */
 export async function createToken(
   definition: APOADefinition,
-  options: SigningOptions
+  options: SigningOptions,
+  parentTokenId?: string
 ): Promise<APOAToken> {
   // Validate metadata if present
   if (definition.metadata) {
@@ -33,7 +34,10 @@ export async function createToken(
         : definition.expires
       ).getTime() / 1000
     ),
-    definition: serializeDefinition(definition),
+    definition: {
+      ...serializeDefinition(definition),
+      ...(parentTokenId ? { parentToken: parentTokenId } : {}),
+    },
   };
 
   if (definition.notBefore) {
@@ -63,6 +67,7 @@ export async function createToken(
     signature: raw.split('.')[2],
     issuer,
     audience,
+    parentToken: parentTokenId,
     raw,
   };
 
