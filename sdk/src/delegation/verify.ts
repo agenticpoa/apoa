@@ -13,6 +13,11 @@ import { matchScope } from '../scope/patterns.js';
  * - Checks expiration of every token (if any parent expired, chain is invalid)
  * - If RevocationStore provided, checks revocation of every token
  * - Reports all errors found, plus failedAt index
+ *
+ * IMPORTANT: This function checks structural integrity (attenuation, expiry,
+ * revocation, parentToken links) but does NOT verify cryptographic signatures.
+ * Each token in the chain MUST be validated via validateToken() before passing
+ * to verifyChain(). Passing unvalidated APOAToken objects defeats chain security.
  */
 export async function verifyChain(
   chain: DelegationChain,

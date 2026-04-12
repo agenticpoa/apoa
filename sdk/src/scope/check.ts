@@ -162,15 +162,16 @@ export async function authorize(
   if (rules && rules.length > 0) {
     // 4. Hard rules — deny if the action matches the rule.
     //    Matching: extract the key from the rule id (strip "no-" prefix if present)
-    //    and check if it appears in the action string.
+    //    and check if it appears as a SEGMENT in the action (split on ':').
     //    e.g. rule "no-messaging" → key "messaging" → blocks "messaging:send"
     //    e.g. rule "no-signing"   → key "signing"   → blocks "signing:submit"
     //    e.g. rule "no-signing"   → key "signing"   → does NOT block "appointments:read"
+    //    e.g. rule "no-read"      → key "read"      → does NOT block "threading:update"
     for (const rule of rules) {
       if (rule.enforcement === 'hard') {
         const ruleKey = rule.id.startsWith('no-') ? rule.id.slice(3) : rule.id;
-        const actionLower = action.toLowerCase();
-        if (actionLower.includes(ruleKey.toLowerCase())) {
+        const actionSegments = action.toLowerCase().split(':');
+        if (actionSegments.includes(ruleKey.toLowerCase())) {
           return {
             authorized: false,
             reason: `hard rule '${rule.id}' violated`,

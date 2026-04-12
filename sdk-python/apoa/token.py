@@ -318,6 +318,10 @@ def _validate_definition_data(obj: dict[str, Any]) -> tuple[list[str], list[str]
             if len(serialized) > 1024:
                 errors.append(f"metadata serialized size is {len(serialized)} bytes (max 1024)")
             for key in keys:
+                # Keys starting with _ are reserved for SDK use (e.g., _delegationDepth).
+                # Reject them in parsed definitions to prevent forgery.
+                if key.startswith("_"):
+                    errors.append(f"metadata key '{key}' uses reserved prefix '_' (reserved for SDK internal use)")
                 val = metadata[key]
                 if val is not None and not isinstance(val, (str, int, float, bool)):
                     errors.append(f"metadata['{key}'] has invalid type '{type(val).__name__}' (must be str | int | float | bool | None)")
@@ -464,13 +468,16 @@ def validate_token(
 
     # --- Signature verification ---
     payload: dict[str, Any] | None = None
+    signature_verified = False
     if public_key:
         try:
             payload = verify_token(raw_jwt, public_key)
+            signature_verified = True
         except Exception:
             errors.append("Signature verification failed")
 
-    # If we couldn't verify, try to decode payload for structural checks
+    # If we couldn't verify, decode payload for structural checks only.
+    # parsed_token will NOT be populated (prevents operating on forged data).
     if payload is None:
         try:
             import jwt as pyjwt
@@ -482,11 +489,12 @@ def validate_token(
     if payload is None:
         return ValidationResult(valid=False, errors=errors if errors else ["Unable to decode token"], warnings=warnings or None)
 
-    # --- Build APOAToken from payload ---
-    try:
-        parsed_token = _payload_to_token(payload, raw_jwt)
-    except Exception:
-        errors.append("Token payload has invalid structure")
+    # --- Build APOAToken from payload (only if signature was verified) ---
+    if signature_verified:
+        try:
+            parsed_token = _payload_to_token(payload, raw_jwt)
+        except Exception:
+            errors.append("Token payload has invalid structure")
 
     # --- Temporal checks ---
     if payload.get("exp") is not None:

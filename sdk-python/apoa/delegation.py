@@ -92,7 +92,12 @@ def verify_chain(
     chain: list[APOAToken],
     revocation_store: Any | None = None,
 ) -> ChainVerificationResult:
-    """Verify a full delegation chain."""
+    """Verify a full delegation chain.
+
+    Checks structural integrity (attenuation, expiry, revocation, parent links)
+    but does NOT verify cryptographic signatures. Each token MUST be validated
+    via validate_token() before passing to verify_chain().
+    """
     errors: list[str] = []
     failed_at: int | None = None
 

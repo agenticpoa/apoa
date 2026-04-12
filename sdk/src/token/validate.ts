@@ -75,16 +75,19 @@ export async function validateToken(
 
   // --- Signature verification ---
   let payload: Record<string, unknown> | undefined;
+  let signatureVerified = false;
 
   if (publicKey) {
     try {
       payload = await verifySignature(rawJwt, publicKey);
+      signatureVerified = true;
     } catch {
       errors.push('Signature verification failed');
     }
   }
 
-  // If we couldn't verify, try to decode payload anyway for structural checks
+  // If we couldn't verify, decode payload for structural checks only.
+  // result.token will NOT be populated (prevents operating on forged data).
   if (!payload) {
     try {
       const payloadB64 = rawJwt.split('.')[1];
@@ -102,11 +105,13 @@ export async function validateToken(
     return { valid: false, errors: errors.length > 0 ? errors : ['Unable to decode token'], warnings };
   }
 
-  // --- Build APOAToken from payload ---
-  try {
-    parsedToken = payloadToToken(payload, rawJwt);
-  } catch {
-    errors.push('Token payload has invalid structure');
+  // --- Build APOAToken from payload (only if signature was verified) ---
+  if (signatureVerified) {
+    try {
+      parsedToken = payloadToToken(payload, rawJwt);
+    } catch {
+      errors.push('Token payload has invalid structure');
+    }
   }
 
   // --- Temporal checks ---

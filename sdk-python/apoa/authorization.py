@@ -70,7 +70,8 @@ def authorize(
         for rule in rules:
             if rule.enforcement == "hard":
                 rule_key = rule.id[3:] if rule.id.startswith("no-") else rule.id
-                if rule_key.lower() in action.lower():
+                action_segments = action.lower().split(":")
+                if rule_key.lower() in action_segments:
                     return AuthorizationResult(
                         authorized=False,
                         reason=f"hard rule '{rule.id}' violated",

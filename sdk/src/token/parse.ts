@@ -147,6 +147,13 @@ function validateMetadata(metadata: unknown, errors: string[]): void {
 
   const record = metadata as Record<string, unknown>;
   for (const key of keys) {
+    // Keys starting with _ are reserved for SDK use (e.g., _delegationDepth).
+    // Reject them in parsed definitions to prevent forgery.
+    if (key.startsWith('_')) {
+      errors.push(
+        `metadata key '${key}' uses reserved prefix '_' (reserved for SDK internal use)`
+      );
+    }
     const value = record[key];
     if (
       value !== null &&
