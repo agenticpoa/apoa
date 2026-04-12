@@ -259,6 +259,7 @@ ZCAP-LD is the closest — we build on it directly. But it doesn't address brows
 
 ## Ecosystem
 
+- [`@apoa/mcp`](https://github.com/agenticpoa/apoa-mcp) — APOA authorization for MCP servers. Per-tool-call scoping, delegation chains, audit trails. Middleware or proxy mode.
 - [Jean-Claw Van Damme](https://github.com/agenticpoa/jean-claw-van-damme) — Authorization gatekeeper for OpenClaw agents ([ClawHub](https://clawhub.ai/agenticpoa/jean-claw-van-damme))
 
 ---
