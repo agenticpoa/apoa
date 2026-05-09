@@ -107,7 +107,7 @@ result = client.authorize(token, "nationwidemortgage.com", "documents:sign")
 
 Both SDKs produce and consume the same JWT tokens -- a token signed in TypeScript validates in Python and vice versa.
 
-The SDKs handle token creation, signing, validation, scope checking, constraint enforcement, hard/soft rule enforcement, delegation with capability attenuation, chain verification, cascade revocation, and audit logging. See [`sdk/`](sdk/) for TypeScript and [`sdk-python/`](sdk-python/) for Python.
+The SDKs handle token creation, signing, validation, scope checking, constraint enforcement, hard/soft rule enforcement, delegation with capability attenuation, chain verification, cascade revocation, and audit logging. See [`sdks/typescript/`](sdks/typescript/) for TypeScript and [`sdks/python/`](sdks/python/) for Python.
 
 ---
 
@@ -326,8 +326,8 @@ See [SPEC.md](SPEC.md) for the full technical specification. It's riveting. Well
 - [x] Problem statement and concept definition
 - [x] Landscape analysis of existing standards and gaps
 - [x] Draft specification v0.1
-- [x] Reference implementation (TypeScript SDK — [`@apoa/core`](sdk/))
-- [x] Python SDK — [`apoa`](sdk-python/) (cross-SDK compatible)
+- [x] Reference implementation (TypeScript SDK — [`@apoa/core`](sdks/typescript/))
+- [x] Python SDK — [`apoa`](sdks/python/) (cross-SDK compatible)
 - [ ] Community feedback and iteration
 - [ ] Consumer product prototype (agent authorization dashboard)
 - [ ] Security audit

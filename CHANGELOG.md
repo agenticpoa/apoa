@@ -15,9 +15,11 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and
 - `.github/workflows/ci.yml` — GitHub Actions matrix for the TypeScript SDK (Node 20, 22) and Python SDK (3.11, 3.12, 3.13). The Python job regenerates the cross-SDK fixture from the TS source so `test_cross_sdk.py` exercises real interop on every run.
 - `SECURITY.md` — vulnerability disclosure policy.
 - `CHANGELOG.md` — this file.
+- `sdks/python/examples/` — four worked examples (`quickstart.py`, `delegation_chain.py`, `healthcare.py`, `home_purchase.py`) mirroring the TypeScript SDK's example coverage.
 
 ### Changed
 
+- **Repo layout**: SDKs moved from `sdk/` and `sdk-python/` to `sdks/typescript/` and `sdks/python/` so the `sdks/` parent groups all language implementations (matching the plural `docs/` and `assets/` convention). Updates to README, SECURITY, package metadata, CI workflow, and the cross-SDK fixture import path.
 - **`@apoa/core`**: `engines.node` raised from `>=18` to `>=20`. `jose@6` uses Web Crypto via `globalThis.crypto`, which isn't a Node global until v19; Node 18 reached end-of-life on 2025-04-30, so the supported-runtime claim now matches reality.
 - README ecosystem list now includes `sshsign` (SSH signing service used by the negotiation demos).
 

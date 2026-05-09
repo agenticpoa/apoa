@@ -84,8 +84,8 @@ Tokens created by `@apoa/core` validate in the [Python SDK](https://pypi.org/pro
 ## Links
 
 - [Spec](https://github.com/agenticpoa/apoa/blob/main/SPEC.md)
-- [Source](https://github.com/agenticpoa/apoa/tree/main/sdk)
-- [Examples](https://github.com/agenticpoa/apoa/tree/main/sdk/examples)
+- [Source](https://github.com/agenticpoa/apoa/tree/main/sdks/typescript)
+- [Examples](https://github.com/agenticpoa/apoa/tree/main/sdks/typescript/examples)
 
 ## License
 

@@ -2,7 +2,7 @@
  * Generate a fixture JWT from the TypeScript SDK for cross-SDK compatibility testing.
  * Run: node tests/generate_ts_fixture.mjs
  */
-import { createToken, generateKeyPair } from '../../sdk/src/index.ts';
+import { createToken, generateKeyPair } from '../../typescript/src/index.ts';
 import { writeFileSync } from 'fs';
 
 const keys = await generateKeyPair();

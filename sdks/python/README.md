@@ -76,7 +76,7 @@ from apoa import authorize, check_scope
 check_scope(token, "service.com", "action:read")
 ```
 
-See the [full spec](https://github.com/agenticpoa/apoa/blob/main/SPEC.md) and [TypeScript SDK](https://github.com/agenticpoa/apoa/tree/main/sdk) for more.
+See the [full spec](https://github.com/agenticpoa/apoa/blob/main/SPEC.md) and [TypeScript SDK](https://github.com/agenticpoa/apoa/tree/main/sdks/typescript) for more.
 
 ## License
 

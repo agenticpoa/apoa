@@ -38,7 +38,7 @@ When reporting, please include:
 
 In scope:
 
-- The TypeScript SDK (`sdk/`) and Python SDK (`sdk-python/`).
+- The TypeScript SDK (`sdks/typescript/`) and Python SDK (`sdks/python/`).
 - The published packages on npm (`@apoa/core`) and PyPI (`apoa`).
 - The APOA specification (`SPEC.md`) — design-level issues that materially weaken the security model.
 

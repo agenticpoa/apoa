@@ -27,7 +27,7 @@ dev = ["pytest>=8.0.0"]
 
 [project.urls]
 Homepage = "https://github.com/agenticpoa/apoa"
-Documentation = "https://github.com/agenticpoa/apoa/tree/main/sdk-python"
+Documentation = "https://github.com/agenticpoa/apoa/tree/main/sdks/python"
 Repository = "https://github.com/agenticpoa/apoa"
 Issues = "https://github.com/agenticpoa/apoa/issues"
 
