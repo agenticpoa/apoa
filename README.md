@@ -4,6 +4,11 @@
 
 *Pronounced "ah-POH-ah" like aloha 🤙*
 
+[![CI](https://github.com/agenticpoa/apoa/actions/workflows/ci.yml/badge.svg)](https://github.com/agenticpoa/apoa/actions/workflows/ci.yml)
+[![npm: @apoa/core](https://img.shields.io/npm/v/@apoa/core.svg?label=%40apoa%2Fcore&color=cb3837)](https://www.npmjs.com/package/@apoa/core)
+[![PyPI: apoa](https://img.shields.io/pypi/v/apoa.svg?label=apoa&color=3776ab)](https://pypi.org/project/apoa/)
+[![License: Apache 2.0](https://img.shields.io/badge/license-Apache%202.0-blue.svg)](LICENSE)
+
 **Authorization infrastructure for AI agents.**
 
 > In January 2026, a developer [gave an AI agent access to his email, calendar, and browser](https://aaronstuyvenberg.com/posts/clawd-bought-a-car) and told it to buy him a car. The agent negotiated a $4,200 discount and closed the deal. It also sent a confidential email to the wrong person — because its entire authorization model was a natural language prompt that said "prompt me before replying to anything consequential."
