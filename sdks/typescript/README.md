@@ -53,7 +53,7 @@ const denied = await client.authorize(token, "nationwidemortgage.com", "document
 - **Cascade revocation**: revoke parent, all children die instantly
 - **Audit trail**: append-only action log per token
 - **Browser mode**: credential vault injection config (the AI never sees passwords)
-- **263 tests** across 17 test files
+- **Comprehensive test suite** with cross-SDK fixture verification against the [Python SDK](https://pypi.org/project/apoa/)
 
 ## Two Usage Styles
 

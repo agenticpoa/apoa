@@ -105,9 +105,28 @@ result = client.authorize(token, "nationwidemortgage.com", "documents:sign")
 # AuthorizationResult(authorized=False, reason="scope 'documents:sign' not in authorized scopes")
 ```
 
-Both SDKs produce and consume the same JWT tokens -- a token signed in TypeScript validates in Python and vice versa.
-
 The SDKs handle token creation, signing, validation, scope checking, constraint enforcement, hard/soft rule enforcement, delegation with capability attenuation, chain verification, cascade revocation, and audit logging. See [`sdks/typescript/`](sdks/typescript/) for TypeScript and [`sdks/python/`](sdks/python/) for Python.
+
+---
+
+## Cross-SDK Compatibility
+
+Tokens are JWTs. A token signed by `@apoa/core` validates in `apoa` (Python) and vice versa — same algorithm, same payload schema, same scope and rule semantics.
+
+```typescript
+// In TypeScript: sign a token, hand off the JWT string.
+const { raw } = await createToken(definition, { privateKey });
+fetch("https://python-service/validate", { method: "POST", body: raw });
+```
+
+```python
+# In Python: validate the same JWT, run authorization checks.
+result = client.validate_token(raw_jwt, ValidationOptions(public_key=key))
+assert result.valid
+authz = client.authorize(result.token, "mychart.com", "appointments:read")
+```
+
+The serialization layer maps the camelCase JWT payload (e.g., `accessMode`, `agentProvider`) to snake_case in Python (`access_mode`, `agent_provider`) automatically. Cross-SDK fixture tests run on every CI build to catch any drift before it ships.
 
 ---
 
