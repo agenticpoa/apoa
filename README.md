@@ -196,6 +196,31 @@ More scenarios (healthcare coordination, new parent logistics) are in [EXAMPLES.
 
 ---
 
+## Demos
+
+Working end-to-end demos that exercise the SDK against real services and real signing.
+
+### [`negotiate`](https://github.com/agenticpoa/negotiate) — AI agents negotiate a YC SAFE
+
+Two agents — founder-side and investor-side — negotiate a SAFE using the Rubinstein alternating-offers model. Each agent operates inside an APOA token its principal signed: valuation cap floor/ceiling, discount bounds, MFN, pro-rata, signing posture. Every offer is constraint-validated and chained into a Merkle log; the executed PDF includes the full negotiation history.
+
+[![AI Agents Negotiate a YC SAFE](https://img.youtube.com/vi/l_wUpE8daOU/maxresdefault.jpg)](https://youtu.be/l_wUpE8daOU)
+
+```bash
+git clone https://github.com/agenticpoa/negotiate.git
+cd negotiate && pip install -r requirements.txt
+cp .env.example .env  # add ANTHROPIC_API_KEY
+python negotiate.py --no-sshsign
+```
+
+### [`claw-negotiate`](https://github.com/agenticpoa/claw-negotiate) — same negotiation, OpenClaw + Telegram
+
+The same SAFE-negotiation flow packaged as an OpenClaw skill: founder and investor each run their own OpenClaw, the two agents negotiate publicly in a Telegram group, signing happens privately in DMs, and the executed SAFE carries an [`sshsign`](https://github.com/agenticpoa/sshsign) audit trail. Demonstrates APOA across two independently-authorized agents in a real consumer surface.
+
+[![claw-negotiate demo](https://img.youtube.com/vi/T2Y2Tr__g_k/maxresdefault.jpg)](https://www.youtube.com/watch?v=T2Y2Tr__g_k)
+
+---
+
 ## How Mode B Actually Works
 
 This is the part that gets hand-waved in most authorization discussions, because it's genuinely hard. Here's how APOA approaches it.
@@ -261,6 +286,7 @@ ZCAP-LD is the closest — we build on it directly. But it doesn't address brows
 
 - [`@apoa/mcp`](https://github.com/agenticpoa/apoa-mcp) — APOA authorization for MCP servers. Per-tool-call scoping, delegation chains, audit trails. Middleware or proxy mode.
 - [`@apoa/a2a`](https://github.com/agenticpoa/apoa-a2a) — APOA authorization for A2A agent-to-agent communication. Scoped delegation tokens across agent hops.
+- [`sshsign`](https://github.com/agenticpoa/sshsign) — SSH-based signing service for AI agents. SSH key as identity, scoped authorization, co-sign approval with handwritten signatures, immutable audit trail. Used by the negotiation demos for cryptographic signing.
 - [Jean-Claw Van Damme](https://github.com/agenticpoa/jean-claw-van-damme) — Authorization gatekeeper for OpenClaw agents ([ClawHub](https://clawhub.ai/agenticpoa/jean-claw-van-damme))
 
 ---
