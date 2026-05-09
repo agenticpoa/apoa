@@ -199,6 +199,20 @@ class AuditEntry:
 
 
 @dataclass
+class AuditEntryInput:
+    """Input for log_action; mirrors AuditEntry minus token_id and timestamp,
+    matching the TypeScript SDK's `Omit<AuditEntry, 'tokenId' | 'timestamp'>`."""
+
+    action: str
+    service: str
+    result: str  # "allowed" | "denied" | "escalated"
+    details: dict[str, str | int | float | bool | None] | None = None
+    url: str | None = None
+    screenshot_ref: str | None = None
+    access_mode: str | None = None
+
+
+@dataclass
 class AuditQueryOptions:
     from_time: datetime | None = None
     to_time: datetime | None = None

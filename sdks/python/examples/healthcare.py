@@ -4,6 +4,7 @@ from apoa import (
     APOADefinition,
     Agent,
     AgentProvider,
+    AuditEntryInput,
     Principal,
     Rule,
     ServiceAuthorization,
@@ -65,15 +66,32 @@ def main() -> None:
     print("cvs payment ->", apoa.check_constraint(token, "cvs.com", "payment"))
 
     # Log actions
-    apoa.log_action(token.jti, "appointments:read", "mychart.com", "allowed", appointmentCount=3)
-    apoa.log_action(token.jti, "claims:read", "aetna.com", "allowed", claimsReturned=12)
     apoa.log_action(
         token.jti,
-        "prescriptions:refill:request",
-        "cvs.com",
-        "allowed",
-        medication="Lisinopril",
-        pharmacy="CVS #4521",
+        AuditEntryInput(
+            action="appointments:read",
+            service="mychart.com",
+            result="allowed",
+            details={"appointmentCount": 3},
+        ),
+    )
+    apoa.log_action(
+        token.jti,
+        AuditEntryInput(
+            action="claims:read",
+            service="aetna.com",
+            result="allowed",
+            details={"claimsReturned": 12},
+        ),
+    )
+    apoa.log_action(
+        token.jti,
+        AuditEntryInput(
+            action="prescriptions:refill:request",
+            service="cvs.com",
+            result="allowed",
+            details={"medication": "Lisinopril", "pharmacy": "CVS #4521"},
+        ),
     )
 
     # Query audit trail

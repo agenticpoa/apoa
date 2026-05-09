@@ -21,6 +21,7 @@ from .types import (
     APOADefinition,
     APOAToken,
     AuditEntry,
+    AuditEntryInput,
     AuditQueryOptions,
     AuthorizationResult,
     ChainVerificationResult,
@@ -95,8 +96,8 @@ class APOAClient:
     def cascade_revoke(self, parent_token_id: str, child_token_ids: list[str], revoked_by: str, reason: str | None = None) -> RevocationRecord:
         return cascade_revoke(parent_token_id, child_token_ids, revoked_by, reason, self._revocation_store)
 
-    def log_action(self, token_id: str, action: str, service: str, result: str, **details: str | int | float | bool | None) -> None:
-        log_action(token_id, action, service, result, self._audit_store, **details)
+    def log_action(self, token_id: str, entry: AuditEntryInput) -> None:
+        log_action(token_id, entry, self._audit_store)
 
     def get_audit_trail(self, token_id: str, options: AuditQueryOptions | None = None) -> list[AuditEntry]:
         return get_audit_trail(token_id, options, self._audit_store)

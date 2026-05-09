@@ -5,7 +5,7 @@ from __future__ import annotations
 from datetime import datetime, timezone
 from typing import Protocol
 
-from .types import AuditEntry, AuditQueryOptions
+from .types import AuditEntry, AuditEntryInput, AuditQueryOptions
 
 
 class AuditStore(Protocol):
@@ -57,25 +57,26 @@ def _apply_query_options(entries: list[AuditEntry], options: AuditQueryOptions |
 
 def log_action(
     token_id: str,
-    action: str,
-    service: str,
-    result: str,
+    entry: AuditEntryInput,
     store: AuditStore | None = None,
-    **details: str | int | float | bool | None,
 ) -> None:
-    """Log an action against a token."""
+    """Log an action against a token. Mirrors the TypeScript logAction signature."""
     if store is None:
         raise ValueError("audit store is required")
 
-    entry = AuditEntry(
-        token_id=token_id,
-        timestamp=datetime.now(timezone.utc),
-        action=action,
-        service=service,
-        result=result,
-        details=details if details else None,
+    store.append(
+        AuditEntry(
+            token_id=token_id,
+            timestamp=datetime.now(timezone.utc),
+            action=entry.action,
+            service=entry.service,
+            result=entry.result,
+            details=entry.details,
+            url=entry.url,
+            screenshot_ref=entry.screenshot_ref,
+            access_mode=entry.access_mode,
+        )
     )
-    store.append(entry)
 
 
 def get_audit_trail(

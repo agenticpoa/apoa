@@ -3,6 +3,7 @@
 from apoa import (
     APOADefinition,
     Agent,
+    AuditEntryInput,
     DelegationDefinition,
     Principal,
     Rule,
@@ -63,8 +64,8 @@ class TestClient:
         )
         token = client.create_token(defn)
 
-        client.log_action(token.jti, "read", "test.com", "allowed")
-        client.log_action(token.jti, "write", "test.com", "allowed")
+        client.log_action(token.jti, AuditEntryInput(action="read", service="test.com", result="allowed"))
+        client.log_action(token.jti, AuditEntryInput(action="write", service="test.com", result="allowed"))
 
         trail = client.get_audit_trail(token.jti)
         assert len(trail) == 2

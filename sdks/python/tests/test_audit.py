@@ -2,7 +2,15 @@
 
 from datetime import datetime, timezone
 
-from apoa import AuditEntry, AuditQueryOptions, MemoryAuditStore, log_action, get_audit_trail, get_audit_trail_by_service
+from apoa import (
+    AuditEntry,
+    AuditEntryInput,
+    AuditQueryOptions,
+    MemoryAuditStore,
+    get_audit_trail,
+    get_audit_trail_by_service,
+    log_action,
+)
 
 
 class TestAuditStore:
@@ -48,15 +56,43 @@ class TestAuditStore:
 class TestLogAction:
     def test_log_action(self):
         store = MemoryAuditStore()
-        log_action("token-1", "rate_lock:read", "mortgage.com", "allowed", store, note="routine check")
+        log_action(
+            "token-1",
+            AuditEntryInput(
+                action="rate_lock:read",
+                service="mortgage.com",
+                result="allowed",
+                details={"note": "routine check"},
+            ),
+            store,
+        )
         entries = get_audit_trail("token-1", store=store)
         assert len(entries) == 1
         assert entries[0].action == "rate_lock:read"
         assert entries[0].details["note"] == "routine check"
 
+    def test_log_action_browser_fields(self):
+        store = MemoryAuditStore()
+        log_action(
+            "token-1",
+            AuditEntryInput(
+                action="rate_lock:read",
+                service="mortgage.com",
+                result="allowed",
+                url="https://portal.mortgage.com/rate-lock",
+                access_mode="browser",
+                screenshot_ref="s3://audit/rate-lock-001.png",
+            ),
+            store,
+        )
+        entry = get_audit_trail("token-1", store=store)[0]
+        assert entry.url == "https://portal.mortgage.com/rate-lock"
+        assert entry.access_mode == "browser"
+        assert entry.screenshot_ref == "s3://audit/rate-lock-001.png"
+
     def test_get_audit_trail_by_service(self):
         store = MemoryAuditStore()
-        log_action("t1", "read", "a.com", "allowed", store)
-        log_action("t2", "write", "a.com", "allowed", store)
+        log_action("t1", AuditEntryInput(action="read", service="a.com", result="allowed"), store)
+        log_action("t2", AuditEntryInput(action="write", service="a.com", result="allowed"), store)
         results = get_audit_trail_by_service("a.com", store=store)
         assert len(results) == 2

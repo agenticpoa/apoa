@@ -6,6 +6,7 @@ from apoa import (
     APOADefinition,
     Agent,
     AgentProvider,
+    AuditEntryInput,
     BrowserSessionConfig,
     LegalFramework,
     Principal,
@@ -124,26 +125,12 @@ def main() -> None:
         mark = "OK" if result.allowed else "X "
         print(f"  [{mark}] {service} {action} ({result.reason})")
 
-    # Simulate browser-mode audit entries.
-    # Note: the standalone log_action in the current Python SDK routes extra kwargs
-    # into the generic `details` bag rather than the typed url/access_mode/
-    # screenshot_ref fields. We append AuditEntry instances directly so we can
-    # demonstrate browser-mode audit shape end-to-end.
+    # Simulate browser-mode audit entries
     print("\n--- Simulating Agent Actions ---")
 
-    from datetime import datetime, timezone
-
-    from apoa import AuditEntry, MemoryAuditStore
-
-    audit = MemoryAuditStore()
-    apoa_with_audit = create_client(default_private_key=private_key, audit_store=audit)
-    # Re-issue the token through the audit-aware client so its jti lines up.
-    token = apoa_with_audit.create_token(token.definition)
-
-    audit.append(
-        AuditEntry(
-            token_id=token.jti,
-            timestamp=datetime.now(timezone.utc),
+    apoa.log_action(
+        token.jti,
+        AuditEntryInput(
             action="rate_lock:read",
             service="nationwidemortgage.com",
             result="allowed",
@@ -151,44 +138,42 @@ def main() -> None:
             access_mode="browser",
             screenshot_ref="s3://homebot-audit/jane/mortgage/rate-lock-001.png",
             details={"rate": "6.25%", "locked_until": "2026-04-15"},
-        )
+        ),
     )
 
-    audit.append(
-        AuditEntry(
-            token_id=token.jti,
-            timestamp=datetime.now(timezone.utc),
+    apoa.log_action(
+        token.jti,
+        AuditEntryInput(
             action="documents:read",
             service="docusign.com",
             result="allowed",
             url="https://app.docusign.com/documents/closing-disclosure",
             access_mode="browser",
             details={"documentType": "Closing Disclosure", "pages": 5},
-        )
+        ),
     )
 
-    audit.append(
-        AuditEntry(
-            token_id=token.jti,
-            timestamp=datetime.now(timezone.utc),
+    apoa.log_action(
+        token.jti,
+        AuditEntryInput(
             action="listings:read",
             service="api.redfin.com",
             result="allowed",
             access_mode="api",
             details={"listingsReturned": 42, "zipCode": "94110"},
-        )
+        ),
     )
 
     # Cross-service audit trail
     print("\n--- Cross-Service Audit Trail ---")
-    trail = apoa_with_audit.get_audit_trail(token.jti)
+    trail = apoa.get_audit_trail(token.jti)
     for entry in trail:
         mode = entry.access_mode or "unknown"
         url_part = f" @ {entry.url}" if entry.url else ""
         print(f"  [{mode}] {entry.service} -> {entry.action}{url_part}")
 
     # Service-specific trail
-    mortgage_trail = apoa_with_audit.get_audit_trail_by_service("nationwidemortgage.com")
+    mortgage_trail = apoa.get_audit_trail_by_service("nationwidemortgage.com")
     print(f"\nMortgage audit entries: {len(mortgage_trail)}")
     if mortgage_trail:
         first = mortgage_trail[0]
