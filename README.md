@@ -5,9 +5,15 @@
 *Pronounced "ah-POH-ah" like aloha 🤙*
 
 [![CI](https://github.com/agenticpoa/apoa/actions/workflows/ci.yml/badge.svg)](https://github.com/agenticpoa/apoa/actions/workflows/ci.yml)
-[![npm: @apoa/core](https://img.shields.io/npm/v/@apoa/core.svg?label=%40apoa%2Fcore&color=cb3837)](https://www.npmjs.com/package/@apoa/core)
-[![PyPI: apoa](https://img.shields.io/pypi/v/apoa.svg?label=apoa&color=3776ab)](https://pypi.org/project/apoa/)
 [![License: Apache 2.0](https://img.shields.io/badge/license-Apache%202.0-blue.svg)](LICENSE)
+
+[![npm: @apoa/core](https://img.shields.io/npm/v/@apoa/core.svg?label=%40apoa%2Fcore&color=cb3837)](https://www.npmjs.com/package/@apoa/core)
+[![npm downloads](https://img.shields.io/npm/dm/@apoa/core.svg?label=npm%20downloads&color=cb3837)](https://www.npmjs.com/package/@apoa/core)
+[![types: TypeScript](https://img.shields.io/npm/types/@apoa/core.svg)](https://www.npmjs.com/package/@apoa/core)
+[![bundle size](https://img.shields.io/bundlephobia/minzip/@apoa/core.svg?label=min%2Bgzip)](https://bundlephobia.com/package/@apoa/core)
+
+[![PyPI: apoa](https://img.shields.io/pypi/v/apoa.svg?label=apoa&color=3776ab)](https://pypi.org/project/apoa/)
+[![PyPI downloads](https://img.shields.io/pypi/dm/apoa.svg?label=PyPI%20downloads&color=3776ab)](https://pypi.org/project/apoa/)
 
 **Authorization infrastructure for AI agents.**
 
