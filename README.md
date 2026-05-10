@@ -268,7 +268,7 @@ ZCAP-LD is the closest — we build on it directly. But it doesn't address brows
 - [`@apoa/a2a`](https://github.com/agenticpoa/apoa-a2a) — APOA authorization for A2A agent-to-agent communication. Scoped delegation tokens across agent hops.
 - [`sshsign`](https://github.com/agenticpoa/sshsign) — SSH-based signing service for AI agents. SSH key as identity, scoped authorization, co-sign approval with handwritten signatures, immutable audit trail. Used by the negotiation demos for cryptographic signing.
 - [`negotiate`](https://github.com/agenticpoa/negotiate) — Reference Python implementation: two agents negotiate a YC SAFE via Rubinstein alternating offers, bounded by APOA tokens, signed via `sshsign`, every offer chained to an immutable Merkle log. See [Demos](#demos).
-- [`claw-negotiate`](https://github.com/agenticpoa/claw-negotiate) — OpenClaw skill: same SAFE flow as `negotiate`, packaged for two OpenClaws to negotiate publicly in a Telegram group. Installable from ClawHub. See [Demos](#demos).
+- [`claw-negotiate`](https://github.com/agenticpoa/claw-negotiate) — OpenClaw skill: same SAFE flow as `negotiate`, packaged for two OpenClaws to negotiate publicly in a Telegram group ([ClawHub](https://clawhub.ai/agenticpoa/claw-negotiate)). See [Demos](#demos).
 - [Jean-Claw Van Damme](https://github.com/agenticpoa/jean-claw-van-damme) — Authorization gatekeeper for OpenClaw agents ([ClawHub](https://clawhub.ai/agenticpoa/jean-claw-van-damme))
 
 ---
