@@ -8,40 +8,42 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and
 
 ## [Unreleased]
 
+---
+
+## `@apoa/core` 0.2.0 / `apoa` 0.3.0 — 2026-05-09
+
+This release closes all 11 findings from the 2026-04-12 self-audit and pulls forward a backlog of additive features (JWKS helpers, Python lockfile, examples, doc reorg).
+
 ### Security
 
 - **Constraint attenuation hardening (both SDKs).** A child delegation that omitted a parent's `false` constraint (e.g. parent `{ signing: false }`, child with no constraints) previously slipped through `verifyAttenuation` / `_verify_attenuation` and caused the child's `authorize()` to skip the constraint check entirely. Both SDKs now treat omission as relaxation and reject it. `delegate()` already inherited parent `false` constraints into the child before signing, so tokens minted via `delegate()` are unaffected — but external callers using `verifyAttenuation` to gate trust on a third-party child token now get the strict semantics they were already documented as receiving.
 - **`verifyChain` / `verify_chain` now compare constraints between adjacent tokens.** Previously the chain verifier checked scope subset, expiration, and parent linkage but never inspected `constraints`. A forged child JWT that flipped or omitted a parent's `false` constraint passed chain verification. Both SDKs now flag any constraint relaxation as a chain error.
 - **Empty scope no longer matches empty scope (both SDKs).** `matchScope('', '')` previously returned `true` because `parseScope('')` produced an empty array on both sides and the segment-comparison loop was never entered. A token with `scopes: ['']` could authorize an empty action string, or vice versa. Both SDKs now reject empty patterns, empty requested strings, and empty segments (`'foo::bar'`). `parseDefinition` also rejects empty scope strings at definition time.
 - **`ValidationOptions.algorithms` lets callers pin the accepted JWS algorithm (both SDKs).** Previously the Python SDK passed `["EdDSA", "ES256"]` to PyJWT unconditionally, with no caller override. The TS SDK silently inherited `jose`'s default acceptance. An organization that mandates EdDSA-only had no way to enforce it. The new option defaults to `["EdDSA", "ES256"]` (the APOA conformance baseline) and can be narrowed to a single value to enforce policy.
+- **JWKS resolver hardening (both SDKs).** Resolvers now reject non-`https://` URLs by default (escape hatch via `allowInsecure` / `allow_insecure` or a custom HTTP fetcher). The Python resolver's `alg` whitelist is tightened to EdDSA + ES256 only, matching the SPEC §4.1 conformance baseline; previously it silently accepted ES384/ES512 keys.
 
 ### Changed
 
 - **BREAKING (`@apoa/core`):** `revoke()`, `isRevoked()`, and `cascadeRevoke()` no longer accept an optional `RevocationStore` — the store argument is required. The previous module-level `defaultStore` singletons silently diverged from the store used by `createClient()` and any caller-supplied store, producing revocations that appeared to succeed but were never enforced. Callers that omitted the store must now pass one explicitly. The Python SDK already required the store at runtime; this aligns the TypeScript surface.
+- **Repo layout**: SDKs moved from `sdk/` and `sdk-python/` to `sdks/typescript/` and `sdks/python/` so the `sdks/` parent groups all language implementations.
+- **`@apoa/core`**: `engines.node` raised from `>=18` to `>=20`. `jose@6` uses Web Crypto via `globalThis.crypto`, which isn't a Node global until v19; Node 18 reached end-of-life on 2025-04-30.
+- **`SPEC.md`**: §4.1 and §13.2 now recommend EdDSA primary, ES256 acceptable. Aligns the spec with what both SDKs already default to and what TLS 1.3 / OpenSSH / RFC 8410 prefer.
 
 ### Added
 
-- **`sdks/python/uv.lock`** — Python SDK now ships a [uv](https://docs.astral.sh/uv/) lockfile pinning every transitive dependency at exact versions. CI installs from the lock with `uv sync --locked`, so builds are reproducible across machines and time. The release workflow uses the same path; updating dependencies requires regenerating `uv.lock` with `uv lock` and committing the new file alongside `pyproject.toml`.
-
-- `docs/FAQ.md` and `docs/PRIOR_ART.md` — long-form prose moved out of the README to keep the entry point tight.
-- `Demos` section in the README pointing to [`negotiate`](https://github.com/agenticpoa/negotiate), [`claw-negotiate`](https://github.com/agenticpoa/claw-negotiate), and [`sshsign`](https://github.com/agenticpoa/sshsign).
-- `.github/workflows/ci.yml` — GitHub Actions matrix for the TypeScript SDK (Node 20, 22) and Python SDK (3.11, 3.12, 3.13). The Python job regenerates the cross-SDK fixture from the TS source so `test_cross_sdk.py` exercises real interop on every run.
-- `SECURITY.md` — vulnerability disclosure policy.
-- `CHANGELOG.md` — this file.
-- `sdks/python/examples/` — four worked examples (`quickstart.py`, `delegation_chain.py`, `healthcare.py`, `home_purchase.py`) mirroring the TypeScript SDK's example coverage.
 - **JWKS publish + resolve helpers** in both SDKs:
   - `publicKeyToJWK` / `public_key_to_jwk` — convert an Ed25519 or P-256 public key to a JWK with `kid`, `use`, and `alg` set.
   - `buildJWKS` / `build_jwks` — wrap JWKs in the standard `{ keys: [...] }` envelope for serving at `/.well-known/jwks.json`.
   - `createJWKSResolver` / `create_jwks_resolver` — fetch + cache a remote JWKS, plug into `validateToken` via the existing `keyResolver` interface. Includes stale-while-failing fallback so validation survives brief upstream blips.
   - Full publish + resolve walkthrough in [`docs/JWKS.md`](docs/JWKS.md).
+- **`sdks/python/uv.lock`** — Python SDK now ships a [uv](https://docs.astral.sh/uv/) lockfile pinning every transitive dependency at exact versions. CI installs from the lock with `uv sync --locked`, so builds are reproducible across machines and time.
+- `sdks/python/examples/` — four worked examples (`quickstart.py`, `delegation_chain.py`, `healthcare.py`, `home_purchase.py`) mirroring the TypeScript SDK's example coverage.
 - `docs/STORES.md` — concrete Redis revocation + Postgres audit adapter recipes for both SDKs.
-
-### Changed
-
-- **Repo layout**: SDKs moved from `sdk/` and `sdk-python/` to `sdks/typescript/` and `sdks/python/` so the `sdks/` parent groups all language implementations (matching the plural `docs/` and `assets/` convention). Updates to README, SECURITY, package metadata, CI workflow, and the cross-SDK fixture import path.
-- **`@apoa/core`**: `engines.node` raised from `>=18` to `>=20`. `jose@6` uses Web Crypto via `globalThis.crypto`, which isn't a Node global until v19; Node 18 reached end-of-life on 2025-04-30, so the supported-runtime claim now matches reality.
-- README ecosystem list now includes `sshsign` (SSH signing service used by the negotiation demos).
-- README adds a dedicated Cross-SDK Compatibility section showing TS-to-Python token round-trip; the `@apoa/core` README drops a hardcoded test count that would go stale silently.
+- `docs/FAQ.md` and `docs/PRIOR_ART.md` — long-form prose moved out of the README to keep the entry point tight.
+- `Demos` section in the README pointing to [`negotiate`](https://github.com/agenticpoa/negotiate), [`claw-negotiate`](https://github.com/agenticpoa/claw-negotiate), and [`sshsign`](https://github.com/agenticpoa/sshsign).
+- `.github/workflows/ci.yml` — GitHub Actions matrix for the TypeScript SDK (Node 20, 22) and Python SDK (3.11, 3.12, 3.13). The Python job regenerates the cross-SDK fixture from the TS source so `test_cross_sdk.py` exercises real interop on every run.
+- `SECURITY.md` — vulnerability disclosure policy.
+- `CHANGELOG.md` — this file.
 
 ---
 
