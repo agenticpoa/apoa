@@ -1,0 +1,158 @@
+name: Release
+
+# Triggered by version tags. Tag conventions:
+#   apoa-v<version>   -> publishes the Python SDK (`apoa`) to PyPI
+#   core-v<version>   -> publishes the TypeScript SDK (`@apoa/core`) to npm
+#
+# Each job builds, tests, publishes, and creates a GitHub Release with notes
+# pulled from the matching CHANGELOG.md section.
+#
+# Required one-time setup:
+#   PyPI: configure a Trusted Publisher for `apoa` pointing to this repo
+#         + workflow file (`release.yml`) + environment `pypi`.
+#         https://docs.pypi.org/trusted-publishers/
+#   npm:  add an `NPM_TOKEN` secret with publish access to `@apoa/core`.
+#         The workflow uses `--provenance` so npm signs the release.
+
+on:
+  push:
+    tags:
+      - 'apoa-v*'
+      - 'core-v*'
+
+permissions:
+  contents: write   # create GitHub Releases
+  id-token: write   # OIDC for PyPI Trusted Publisher and npm provenance
+
+jobs:
+  python:
+    if: startsWith(github.ref, 'refs/tags/apoa-v')
+    name: Publish apoa to PyPI
+    runs-on: ubuntu-latest
+    environment: pypi
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Resolve version from tag
+        id: ver
+        run: echo "version=${GITHUB_REF_NAME#apoa-v}" >> "$GITHUB_OUTPUT"
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      - name: Verify tag matches pyproject version
+        working-directory: sdks/python
+        run: |
+          pkg_version=$(python3 -c "import tomllib; print(tomllib.load(open('pyproject.toml','rb'))['project']['version'])")
+          if [[ "$pkg_version" != "${{ steps.ver.outputs.version }}" ]]; then
+            echo "::error::tag version ${{ steps.ver.outputs.version }} does not match pyproject version $pkg_version"
+            exit 1
+          fi
+
+      - name: Install Python SDK and build dependencies
+        working-directory: sdks/python
+        run: |
+          pip install -e ".[dev]"
+          pip install build
+
+      - name: Generate cross-SDK fixture
+        working-directory: sdks/typescript
+        run: |
+          npm install
+          npx tsx ../python/tests/generate_ts_fixture.mjs
+
+      - name: Run Python tests
+        working-directory: sdks/python
+        run: pytest -v
+
+      - name: Build distribution
+        working-directory: sdks/python
+        run: python3 -m build
+
+      - name: Publish to PyPI
+        uses: pypa/gh-action-pypi-publish@release/v1
+        with:
+          packages-dir: sdks/python/dist
+
+      - name: Extract release notes
+        id: notes
+        run: |
+          {
+            echo 'body<<NOTES_EOF'
+            ./.github/scripts/extract-changelog.sh "apoa" "${{ steps.ver.outputs.version }}"
+            echo 'NOTES_EOF'
+          } >> "$GITHUB_OUTPUT"
+
+      - name: Create GitHub Release
+        uses: softprops/action-gh-release@v2
+        with:
+          name: apoa ${{ steps.ver.outputs.version }}
+          body: ${{ steps.notes.outputs.body }}
+          files: |
+            sdks/python/dist/*.tar.gz
+            sdks/python/dist/*.whl
+
+  typescript:
+    if: startsWith(github.ref, 'refs/tags/core-v')
+    name: Publish @apoa/core to npm
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Resolve version from tag
+        id: ver
+        run: echo "version=${GITHUB_REF_NAME#core-v}" >> "$GITHUB_OUTPUT"
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          registry-url: 'https://registry.npmjs.org'
+
+      - name: Verify tag matches package.json version
+        working-directory: sdks/typescript
+        run: |
+          pkg_version=$(node -p "require('./package.json').version")
+          if [[ "$pkg_version" != "${{ steps.ver.outputs.version }}" ]]; then
+            echo "::error::tag version ${{ steps.ver.outputs.version }} does not match package.json version $pkg_version"
+            exit 1
+          fi
+
+      - name: Install dependencies
+        working-directory: sdks/typescript
+        run: npm install
+
+      - name: Typecheck and test
+        working-directory: sdks/typescript
+        run: |
+          npm run typecheck
+          npm test
+
+      - name: Build
+        working-directory: sdks/typescript
+        run: npm run build
+
+      - name: Publish to npm with provenance
+        working-directory: sdks/typescript
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+        run: npm publish --provenance --access public
+
+      - name: Extract release notes
+        id: notes
+        run: |
+          {
+            echo 'body<<NOTES_EOF'
+            ./.github/scripts/extract-changelog.sh "@apoa/core" "${{ steps.ver.outputs.version }}"
+            echo 'NOTES_EOF'
+          } >> "$GITHUB_OUTPUT"
+
+      - name: Create GitHub Release
+        uses: softprops/action-gh-release@v2
+        with:
+          name: '@apoa/core ${{ steps.ver.outputs.version }}'
+          body: ${{ steps.notes.outputs.body }}
