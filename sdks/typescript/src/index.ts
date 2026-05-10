@@ -75,5 +75,9 @@ export { verifyAttenuation } from './scope/attenuate.js';
 export { delegate } from './delegation/chain.js';
 export { verifyChain } from './delegation/verify.js';
 
+// Phase 5: JWKS publish + resolve
+export { publicKeyToJWK, buildJWKS, createJWKSResolver } from './jwks/index.js';
+export type { JWK, JWKS, PublicKeyToJWKOptions, JWKSResolverOptions } from './jwks/index.js';
+
 // Phase 6: Client
 export { createClient } from './client.js';

@@ -113,7 +113,10 @@ result = client.authorize(token, "nationwidemortgage.com", "documents:sign")
 
 The SDKs handle token creation, signing, validation, scope checking, constraint enforcement, hard/soft rule enforcement, delegation with capability attenuation, chain verification, cascade revocation, and audit logging. See [`sdks/typescript/`](sdks/typescript/) for TypeScript and [`sdks/python/`](sdks/python/) for Python.
 
-For production deployments, the `RevocationStore` and `AuditStore` interfaces are pluggable — point them at Redis, Postgres, DynamoDB, or whatever fits your stack. See [`docs/STORES.md`](docs/STORES.md) for concrete adapter recipes in both languages.
+For production deployments:
+
+- **Storage** — the `RevocationStore` and `AuditStore` interfaces are pluggable. Point them at Redis, Postgres, DynamoDB, or whatever fits your stack. See [`docs/STORES.md`](docs/STORES.md) for concrete adapter recipes in both languages.
+- **Key distribution** — principals publish public keys at `/.well-known/jwks.json`; relying parties fetch and cache. The SDKs ship `publicKeyToJWK` / `buildJWKS` helpers and a `createJWKSResolver` that plugs into `validateToken`. See [`docs/JWKS.md`](docs/JWKS.md).
 
 ---
 

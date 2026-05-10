@@ -16,6 +16,12 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and
 - `SECURITY.md` — vulnerability disclosure policy.
 - `CHANGELOG.md` — this file.
 - `sdks/python/examples/` — four worked examples (`quickstart.py`, `delegation_chain.py`, `healthcare.py`, `home_purchase.py`) mirroring the TypeScript SDK's example coverage.
+- **JWKS publish + resolve helpers** in both SDKs:
+  - `publicKeyToJWK` / `public_key_to_jwk` — convert an Ed25519 or P-256 public key to a JWK with `kid`, `use`, and `alg` set.
+  - `buildJWKS` / `build_jwks` — wrap JWKs in the standard `{ keys: [...] }` envelope for serving at `/.well-known/jwks.json`.
+  - `createJWKSResolver` / `create_jwks_resolver` — fetch + cache a remote JWKS, plug into `validateToken` via the existing `keyResolver` interface. Includes stale-while-failing fallback so validation survives brief upstream blips.
+  - Full publish + resolve walkthrough in [`docs/JWKS.md`](docs/JWKS.md).
+- `docs/STORES.md` — concrete Redis revocation + Postgres audit adapter recipes for both SDKs.
 
 ### Changed
 

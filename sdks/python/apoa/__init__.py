@@ -35,6 +35,14 @@ from .audit import (
 # Crypto
 from .crypto import generate_key_pair
 
+# JWKS publish + resolve
+from .jwks import (
+    JWKSResolver,
+    build_jwks,
+    create_jwks_resolver,
+    public_key_to_jwk,
+)
+
 # Time utilities
 from .utils import is_before_not_before, is_expired
 
@@ -107,6 +115,11 @@ __all__ = [
     "MemoryAuditStore",
     # Crypto
     "generate_key_pair",
+    # JWKS
+    "JWKSResolver",
+    "public_key_to_jwk",
+    "build_jwks",
+    "create_jwks_resolver",
     # Time
     "is_expired",
     "is_before_not_before",
