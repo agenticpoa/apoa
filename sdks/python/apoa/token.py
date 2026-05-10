@@ -279,6 +279,10 @@ def _validate_definition_data(obj: dict[str, Any]) -> tuple[list[str], list[str]
                 errors.append(f"services[{i}].service must be a non-empty string")
             if not svc.get("scopes") or not isinstance(svc["scopes"], list) or len(svc["scopes"]) == 0:
                 errors.append(f"services[{i}].scopes must be a non-empty array")
+            else:
+                for j, s in enumerate(svc["scopes"]):
+                    if not isinstance(s, str) or len(s) == 0:
+                        errors.append(f"services[{i}].scopes[{j}] must be a non-empty string")
 
             # Browser mode validation
             access_mode = svc.get("accessMode")
@@ -466,15 +470,33 @@ def validate_token(
     else:
         errors.append("No key provided: supply public_key, key_resolver, or public_key_resolver")
 
+    # --- Algorithm policy check ---
+    # The token's alg header must be in the permitted list. APOA's conformance
+    # baseline is EdDSA + ES256; callers can pin to a single algorithm.
+    permitted_algorithms = options.algorithms if options.algorithms is not None else ["EdDSA", "ES256"]
+    header_alg: str | None = None
+    try:
+        header = decode_header(raw_jwt)
+        if isinstance(header.get("alg"), str):
+            header_alg = header["alg"]
+    except Exception:
+        pass
+    if header_alg and header_alg not in permitted_algorithms:
+        errors.append(
+            f"Token alg '{header_alg}' is not in the permitted list {permitted_algorithms}"
+        )
+
     # --- Signature verification ---
     payload: dict[str, Any] | None = None
     signature_verified = False
-    if public_key:
+    if public_key and header_alg and header_alg in permitted_algorithms:
         try:
-            payload = verify_token(raw_jwt, public_key)
+            payload = verify_token(raw_jwt, public_key, algorithms=permitted_algorithms)
             signature_verified = True
         except Exception:
             errors.append("Signature verification failed")
+    elif public_key and not header_alg:
+        errors.append("Token header missing alg")
 
     # If we couldn't verify, decode payload for structural checks only.
     # parsed_token will NOT be populated (prevents operating on forged data).

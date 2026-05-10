@@ -79,6 +79,13 @@ function validateDefinition(raw: unknown): APOADefinition {
       }
       if (!svc.scopes || !Array.isArray(svc.scopes) || svc.scopes.length === 0) {
         errors.push(`services[${i}].scopes must be a non-empty array`);
+      } else {
+        for (let j = 0; j < svc.scopes.length; j++) {
+          const s = svc.scopes[j];
+          if (typeof s !== 'string' || s.length === 0) {
+            errors.push(`services[${i}].scopes[${j}] must be a non-empty string`);
+          }
+        }
       }
 
       // Phase 2b: Browser mode validation

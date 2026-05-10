@@ -256,6 +256,27 @@ describe('validateToken', () => {
     );
   });
 
+  it('honors algorithm pinning when caller pins to ES256-only', async () => {
+    // Token was signed with EdDSA; pinning to ES256 must reject it.
+    const result = await validateToken(validToken.raw, {
+      publicKey: edKeys.publicKey,
+      algorithms: ['ES256'],
+    });
+    expect(result.valid).toBe(false);
+    expect(result.errors).toContainEqual(
+      expect.stringContaining("alg 'EdDSA' is not in the permitted list")
+    );
+  });
+
+  it('honors algorithm pinning when caller pins to EdDSA-only', async () => {
+    // Token was signed with EdDSA; pinning to EdDSA must accept it.
+    const result = await validateToken(validToken.raw, {
+      publicKey: edKeys.publicKey,
+      algorithms: ['EdDSA'],
+    });
+    expect(result.valid).toBe(true);
+  });
+
   it('detects expired tokens', async () => {
     const expiredDef = { ...baseDef, expires: '2020-01-01' };
     const expired = await createToken(expiredDef, {

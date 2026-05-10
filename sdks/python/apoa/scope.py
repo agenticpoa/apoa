@@ -16,12 +16,17 @@ def match_scope(pattern: str, requested: str) -> bool:
     """Check if a scope pattern matches a requested scope.
 
     Rules:
-    1. Root wildcard "*" matches everything
-    2. Exact match: "appointments:read" matches "appointments:read"
-    3. Wildcard at level: "appointments:*" matches "appointments:read"
+    1. Empty pattern or empty requested string never matches (a vacuous match
+       on '' would let a token with scopes=[''] authorize an empty action).
+    2. Root wildcard "*" matches everything (non-empty).
+    3. Exact match: "appointments:read" matches "appointments:read"
+    4. Wildcard at level: "appointments:*" matches "appointments:read"
        but NOT "appointments:read:summary" (wildcards don't cross levels)
-    4. Segment-by-segment matching with wildcard support at each level
+    5. Segment-by-segment matching with wildcard support at each level
     """
+    if not pattern or not requested:
+        return False
+
     if pattern == "*":
         return True
 
@@ -35,6 +40,8 @@ def match_scope(pattern: str, requested: str) -> bool:
     for pp, rp in zip(pattern_parts, requested_parts):
         if pp == "*":
             continue
+        if not pp or not rp:
+            return False
         if pp != rp:
             return False
 

@@ -48,6 +48,19 @@ class TestMatchScope:
         assert match_scope("*:*", "a:b") is True
         assert match_scope("*:*", "a:b:c") is False
 
+    def test_empty_strings_never_match(self):
+        # Regression: parse_scope('') returns [], so a length-0 == length-0
+        # comparison plus a never-entered loop silently returned True.
+        assert match_scope("", "") is False
+        assert match_scope("", "anything") is False
+        assert match_scope("anything", "") is False
+
+    def test_empty_segments_never_match(self):
+        # "foo::bar" splits to ["foo", "", "bar"]. Empty segments must not
+        # wildcard-match — they should be rejected outright.
+        assert match_scope("foo::bar", "foo:x:bar") is False
+        assert match_scope("foo:x:bar", "foo::bar") is False
+
 
 class TestCheckScope:
     def test_matching_scope(self, basic_token):

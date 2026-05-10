@@ -73,17 +73,40 @@ export async function validateToken(
     );
   }
 
+  // --- Algorithm policy check ---
+  // The token's alg header must be in the permitted list. APOA's conformance
+  // baseline is EdDSA + ES256; callers can pin to a single algorithm to
+  // enforce an org policy (e.g. EdDSA-only).
+  const permittedAlgorithms = options.algorithms ?? ['EdDSA', 'ES256'];
+  let headerAlg: string | undefined;
+  try {
+    const header = decodeHeader(rawJwt);
+    headerAlg = typeof header.alg === 'string' ? header.alg : undefined;
+  } catch {
+    // Header decode already produced an error above when key resolution ran;
+    // if no resolver was used we still want to surface the malformed header.
+  }
+  if (headerAlg && !permittedAlgorithms.includes(headerAlg as 'EdDSA' | 'ES256')) {
+    errors.push(
+      `Token alg '${headerAlg}' is not in the permitted list [${permittedAlgorithms.join(', ')}]`
+    );
+  }
+
   // --- Signature verification ---
   let payload: Record<string, unknown> | undefined;
   let signatureVerified = false;
 
-  if (publicKey) {
+  if (publicKey && headerAlg && permittedAlgorithms.includes(headerAlg as 'EdDSA' | 'ES256')) {
     try {
       payload = await verifySignature(rawJwt, publicKey);
       signatureVerified = true;
     } catch {
       errors.push('Signature verification failed');
     }
+  } else if (publicKey && !headerAlg) {
+    // Header had no alg at all — still attempt verification so jose returns
+    // a meaningful error, but flag the missing alg.
+    errors.push('Token header missing alg');
   }
 
   // If we couldn't verify, decode payload for structural checks only.

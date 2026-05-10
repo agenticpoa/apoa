@@ -39,14 +39,13 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: '20'
-      - uses: actions/setup-python@v5
+      - uses: astral-sh/setup-uv@v6
         with:
-          python-version: ${{ matrix.python }}
-          cache: pip
-          cache-dependency-path: sdks/python/pyproject.toml
-      - name: Install Python SDK
+          enable-cache: true
+          cache-dependency-glob: sdks/python/uv.lock
+      - name: Install Python SDK from uv.lock (reproducible)
         working-directory: sdks/python
-        run: pip install -e ".[dev]"
+        run: uv sync --locked --extra dev --python ${{ matrix.python }}
       - name: Generate cross-SDK fixture from TypeScript
         working-directory: sdks/typescript
         run: |
@@ -54,4 +53,4 @@ jobs:
           npx tsx ../python/tests/generate_ts_fixture.mjs
       - name: Run Python tests
         working-directory: sdks/python
-        run: pytest -v
+        run: uv run --extra dev pytest -v

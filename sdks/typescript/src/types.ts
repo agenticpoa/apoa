@@ -206,6 +206,13 @@ export interface ValidationOptions {
   checkRevocation?: boolean;
   revocationStore?: RevocationStore;
   clockSkew?: number;
+  /**
+   * Permitted JWS algorithms. The token's `alg` header must appear in this
+   * list or validation fails. Defaults to `['EdDSA', 'ES256']` (the APOA
+   * conformance baseline). Pin to a single value to enforce an org policy
+   * (e.g. EdDSA-only).
+   */
+  algorithms?: ('EdDSA' | 'ES256')[];
 }
 
 /** Result of token validation. */

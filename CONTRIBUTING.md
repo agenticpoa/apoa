@@ -34,11 +34,18 @@ npm install
 npm run typecheck
 npm test
 
-# Python
+# Python — recommended (uv, reproducible from sdks/python/uv.lock)
+cd sdks/python
+uv sync --locked --extra dev
+uv run --extra dev pytest
+
+# Python — without uv (fine for casual one-off runs, not lock-aware)
 cd sdks/python
 pip install -e ".[dev]"
 pytest
 ```
+
+The Python SDK uses [`uv`](https://docs.astral.sh/uv/) for reproducible installs. `uv.lock` pins every transitive dependency at exact versions and is committed to the repo; CI installs from it with `uv sync --locked`. If you change `pyproject.toml` dependencies, run `uv lock` to regenerate the lockfile and commit both files together.
 
 Cross-SDK fixture: the Python suite includes `test_cross_sdk.py`, which validates a JWT signed by the TypeScript SDK. To regenerate the fixture before running it locally:
 

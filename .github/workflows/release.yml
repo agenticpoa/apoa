@@ -41,9 +41,10 @@ jobs:
         with:
           node-version: '20'
 
-      - uses: actions/setup-python@v5
+      - uses: astral-sh/setup-uv@v6
         with:
-          python-version: '3.12'
+          enable-cache: true
+          cache-dependency-glob: sdks/python/uv.lock
 
       - name: Verify tag matches pyproject version
         working-directory: sdks/python
@@ -54,11 +55,9 @@ jobs:
             exit 1
           fi
 
-      - name: Install Python SDK and build dependencies
+      - name: Install Python SDK from uv.lock (reproducible)
         working-directory: sdks/python
-        run: |
-          pip install -e ".[dev]"
-          pip install build
+        run: uv sync --locked --extra dev --python 3.12
 
       - name: Generate cross-SDK fixture
         working-directory: sdks/typescript
@@ -68,11 +67,11 @@ jobs:
 
       - name: Run Python tests
         working-directory: sdks/python
-        run: pytest -v
+        run: uv run --extra dev pytest -v
 
       - name: Build distribution
         working-directory: sdks/python
-        run: python3 -m build
+        run: uv run --with build python3 -m build
 
       - name: Publish to PyPI
         uses: pypa/gh-action-pypi-publish@release/v1

@@ -92,5 +92,22 @@ describe('scope patterns', () => {
     it('empty pattern does not match non-empty scope', () => {
       expect(matchScope('', 'appointments:read')).toBe(false);
     });
+
+    it('empty pattern and empty requested do not match (no vacuous match)', () => {
+      // Regression: parseScope('') returns [], so a length-0 == length-0
+      // comparison plus a never-entered loop would silently return true.
+      expect(matchScope('', '')).toBe(false);
+    });
+
+    it('non-empty pattern does not match empty requested', () => {
+      expect(matchScope('appointments:read', '')).toBe(false);
+    });
+
+    it('scopes with empty segments do not match', () => {
+      // "foo::bar" parses to ['foo', '', 'bar']. Empty segments must not
+      // wildcard-match — they should be rejected outright.
+      expect(matchScope('foo::bar', 'foo:x:bar')).toBe(false);
+      expect(matchScope('foo:x:bar', 'foo::bar')).toBe(false);
+    });
   });
 });

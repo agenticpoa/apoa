@@ -259,3 +259,7 @@ class ValidationOptions:
     check_revocation: bool = True
     revocation_store: Any | None = None  # RevocationStore
     clock_skew: int = 30
+    # Permitted JWS algorithms. The token's `alg` header must be in this list.
+    # Defaults to ["EdDSA", "ES256"] (APOA conformance baseline). Pin to a
+    # single value to enforce an org policy (e.g. EdDSA-only).
+    algorithms: list[str] | None = None

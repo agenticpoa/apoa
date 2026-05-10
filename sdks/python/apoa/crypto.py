@@ -47,13 +47,21 @@ def sign_token(payload: dict[str, Any], options: SigningOptions) -> str:
     return jwt.encode(payload, options.private_key, algorithm=alg, headers=headers)
 
 
-def verify_token(raw_jwt: str, public_key: Any) -> dict[str, Any]:
-    """Verify a JWT signature and return the decoded payload."""
-    # PyJWT needs to know which algorithms to accept
+def verify_token(
+    raw_jwt: str,
+    public_key: Any,
+    algorithms: list[str] | None = None,
+) -> dict[str, Any]:
+    """Verify a JWT signature and return the decoded payload.
+
+    ``algorithms`` is the whitelist passed to PyJWT. Defaults to
+    ``["EdDSA", "ES256"]`` (the APOA conformance baseline). Pass a
+    single-element list to enforce an org policy.
+    """
     return jwt.decode(
         raw_jwt,
         public_key,
-        algorithms=["EdDSA", "ES256"],
+        algorithms=algorithms if algorithms is not None else ["EdDSA", "ES256"],
         options={"verify_exp": False, "verify_aud": False},
     )
 

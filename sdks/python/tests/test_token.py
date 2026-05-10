@@ -88,6 +88,23 @@ class TestValidateToken:
         assert result.valid is False
         assert any("No key provided" in e for e in result.errors)
 
+    def test_alg_pinning_rejects_other_alg(self, basic_token, ed25519_keys):
+        # basic_token is signed with EdDSA; pinning to ES256 must reject it.
+        result = validate_token(
+            basic_token.raw,
+            ValidationOptions(public_key=ed25519_keys[1], algorithms=["ES256"]),
+        )
+        assert result.valid is False
+        assert any("not in the permitted list" in e for e in result.errors)
+
+    def test_alg_pinning_accepts_matching_alg(self, basic_token, ed25519_keys):
+        # basic_token is signed with EdDSA; pinning to EdDSA must accept it.
+        result = validate_token(
+            basic_token.raw,
+            ValidationOptions(public_key=ed25519_keys[1], algorithms=["EdDSA"]),
+        )
+        assert result.valid is True
+
     def test_size_warning(self, basic_token, ed25519_keys):
         # basic_token is small, should not warn
         result = validate_token(basic_token.raw, ValidationOptions(public_key=ed25519_keys[1]))
