@@ -21,10 +21,18 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and
 
 - **Repo layout**: SDKs moved from `sdk/` and `sdk-python/` to `sdks/typescript/` and `sdks/python/` so the `sdks/` parent groups all language implementations (matching the plural `docs/` and `assets/` convention). Updates to README, SECURITY, package metadata, CI workflow, and the cross-SDK fixture import path.
 - **`@apoa/core`**: `engines.node` raised from `>=18` to `>=20`. `jose@6` uses Web Crypto via `globalThis.crypto`, which isn't a Node global until v19; Node 18 reached end-of-life on 2025-04-30, so the supported-runtime claim now matches reality.
-- **`apoa` (Python)** *(BREAKING, 0.1.1 → 0.2.0)*: `log_action` and `client.log_action` now take an `AuditEntryInput` dataclass instead of `(action, service, result, **details)`. This matches the TypeScript SDK's `logAction(tokenId, entry)` signature one-to-one and lets callers populate the typed `url`, `access_mode`, and `screenshot_ref` fields directly. New `AuditEntryInput` type exported from `apoa`.
+- README ecosystem list now includes `sshsign` (SSH signing service used by the negotiation demos).
+- README adds a dedicated Cross-SDK Compatibility section showing TS-to-Python token round-trip; the `@apoa/core` README drops a hardcoded test count that would go stale silently.
+
+---
+
+## `apoa` 0.2.0 — 2026-05-09
+
+### Changed
+
+- **BREAKING**: `log_action` and `client.log_action` now take an `AuditEntryInput` dataclass instead of `(action, service, result, **details)`. This matches the TypeScript SDK's `logAction(tokenId, entry)` signature one-to-one and lets callers populate the typed `url`, `access_mode`, and `screenshot_ref` fields directly. New `AuditEntryInput` type exported from `apoa`.
   - Before: `client.log_action(jti, "read", "svc.com", "allowed", note="x")`
   - After: `client.log_action(jti, AuditEntryInput(action="read", service="svc.com", result="allowed", details={"note": "x"}))`
-- README ecosystem list now includes `sshsign` (SSH signing service used by the negotiation demos).
 
 ---
 
