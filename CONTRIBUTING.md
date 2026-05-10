@@ -23,12 +23,51 @@ The spec is in working draft. The highest-value contributions at this stage are:
 - **Real-world validation** — if you're building AI agents or agent infrastructure, tell us whether this spec would actually work for your use case
 - **Legal review** — if you have expertise in agency law, UETA, E-SIGN, or AI governance, we'd love your input on the legal alignment sections
 
+## Working on the SDKs
+
+The reference SDKs live under [`sdks/typescript/`](sdks/typescript/) and [`sdks/python/`](sdks/python/). Run the test suite for each before opening a PR:
+
+```bash
+# TypeScript
+cd sdks/typescript
+npm install
+npm run typecheck
+npm test
+
+# Python
+cd sdks/python
+pip install -e ".[dev]"
+pytest
+```
+
+Cross-SDK fixture: the Python suite includes `test_cross_sdk.py`, which validates a JWT signed by the TypeScript SDK. To regenerate the fixture before running it locally:
+
+```bash
+cd sdks/typescript
+npx tsx ../python/tests/generate_ts_fixture.mjs
+```
+
+CI runs both suites on every push and PR. The Python job regenerates the fixture automatically so cross-SDK drift is caught before merge.
+
+## Releasing
+
+Releases are tag-driven. Pushing an `apoa-v*` tag publishes the Python SDK to PyPI; pushing a `core-v*` tag publishes `@apoa/core` to npm. The [release workflow](.github/workflows/release.yml) verifies the tag matches the package metadata version, runs the full test suite, publishes, and creates a GitHub Release with notes pulled from the matching `CHANGELOG.md` section.
+
+To cut a release:
+
+1. Bump the version in `sdks/python/pyproject.toml` or `sdks/typescript/package.json`.
+2. Update `CHANGELOG.md`: move items from `[Unreleased]` into a dated `## \`apoa\` <version> — <date>` (or `## \`@apoa/core\` <version> — <date>`) section.
+3. Commit on `main`.
+4. Tag and push: `git tag apoa-v<version> && git push origin main apoa-v<version>` (or `core-v<version>`).
+
+The workflow handles the rest. Pre-1.0 releases follow the convention that breaking changes bump the minor version (`0.1.x` → `0.2.0`).
+
 ## Guidelines
 
 - Be specific and constructive
 - Assume good faith
 - If you disagree with a design decision, explain the tradeoff you'd make instead
-- No cryptocurrency, token, or blockchain proposals — see the [FAQ](README.md#faq)
+- No cryptocurrency, token, or blockchain proposals — see the [FAQ](docs/FAQ.md)
 
 ## License
 
