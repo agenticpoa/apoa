@@ -50,7 +50,11 @@ describe('verifyAttenuation', () => {
     const child: DelegationDefinition = {
       agent: { id: 'did:apoa:sub-bot' },
       services: [
-        { service: 'mychart.com', scopes: ['appointments:read'] },
+        {
+          service: 'mychart.com',
+          scopes: ['appointments:read'],
+          constraints: { signing: false, data_export: false },
+        },
       ],
       rules: [
         { id: 'no-messaging', description: 'Never send messages', enforcement: 'hard' },
@@ -109,7 +113,11 @@ describe('verifyAttenuation', () => {
     const child: DelegationDefinition = {
       agent: { id: 'did:apoa:sub-bot' },
       services: [
-        { service: 'mychart.com', scopes: ['appointments:read'] },
+        {
+          service: 'mychart.com',
+          scopes: ['appointments:read'],
+          constraints: { signing: false, data_export: false },
+        },
       ],
       expires: '2098-01-01',
       rules: [
@@ -127,6 +135,48 @@ describe('verifyAttenuation', () => {
           service: 'mychart.com',
           scopes: ['appointments:read'],
           constraints: { signing: true }, // parent has signing: false
+        },
+      ],
+      rules: [
+        { id: 'no-messaging', description: 'Never send messages', enforcement: 'hard' },
+      ],
+    };
+    expect(() => verifyAttenuation(parentToken, child)).toThrow(
+      AttenuationViolationError
+    );
+  });
+
+  it('rejects child that omits a parent false constraint', () => {
+    // Regression: previously verifyAttenuation only rejected childValue === true
+    // and silently accepted childValue === undefined. A child omitting a
+    // parent's `signing: false` would slip through, then authorize() would
+    // skip the constraint check entirely. Now omission is treated as relaxation.
+    const child: DelegationDefinition = {
+      agent: { id: 'did:apoa:sub-bot' },
+      services: [
+        {
+          service: 'mychart.com',
+          scopes: ['appointments:read'],
+          constraints: { data_export: false }, // intentionally omits `signing`
+        },
+      ],
+      rules: [
+        { id: 'no-messaging', description: 'Never send messages', enforcement: 'hard' },
+      ],
+    };
+    expect(() => verifyAttenuation(parentToken, child)).toThrow(
+      AttenuationViolationError
+    );
+  });
+
+  it('rejects child that omits all parent false constraints', () => {
+    const child: DelegationDefinition = {
+      agent: { id: 'did:apoa:sub-bot' },
+      services: [
+        {
+          service: 'mychart.com',
+          scopes: ['appointments:read'],
+          // no constraints at all
         },
       ],
       rules: [
@@ -172,7 +222,11 @@ describe('verifyAttenuation', () => {
     const child: DelegationDefinition = {
       agent: { id: 'did:apoa:sub-bot' },
       services: [
-        { service: 'mychart.com', scopes: ['appointments:read'] },
+        {
+          service: 'mychart.com',
+          scopes: ['appointments:read'],
+          constraints: { signing: false, data_export: false },
+        },
       ],
       rules: [
         { id: 'no-messaging', description: 'Never send messages', enforcement: 'hard' },
@@ -573,6 +627,61 @@ describe('verifyChain', () => {
     expect(result.valid).toBe(false);
     expect(result.errors).toContainEqual(
       expect.stringContaining('child expiration exceeds parent')
+    );
+  });
+
+  it('fails when child relaxes a parent false constraint via flip', async () => {
+    // Parent has signing: false; construct a child that flips it to true
+    // and bypasses delegate()'s inheritance — same shape as a forged token.
+    const flippedChildDef: APOADefinition = {
+      principal: parentDef.principal,
+      agent: { id: 'did:apoa:relaxed-child' },
+      services: [
+        {
+          service: 'mychart.com',
+          scopes: ['appointments:read'],
+          constraints: { signing: true, data_export: false },
+        },
+      ],
+      expires: parentDef.expires,
+    };
+    const flippedChild = await createToken(flippedChildDef, {
+      privateKey: keys.privateKey,
+    });
+    flippedChild.parentToken = parentToken.jti;
+
+    const result = await verifyChain([parentToken, flippedChild]);
+    expect(result.valid).toBe(false);
+    expect(result.errors).toContainEqual(
+      expect.stringContaining("constraint 'signing'")
+    );
+  });
+
+  it('fails when child omits a parent false constraint', async () => {
+    // Parent has signing: false; child omits it entirely. Without the
+    // constraint check in verifyChain, the child's authorize() would
+    // skip the signing check — silent privilege escalation.
+    const omittedChildDef: APOADefinition = {
+      principal: parentDef.principal,
+      agent: { id: 'did:apoa:omitted-child' },
+      services: [
+        {
+          service: 'mychart.com',
+          scopes: ['appointments:read'],
+          // No constraints at all
+        },
+      ],
+      expires: parentDef.expires,
+    };
+    const omittedChild = await createToken(omittedChildDef, {
+      privateKey: keys.privateKey,
+    });
+    omittedChild.parentToken = parentToken.jti;
+
+    const result = await verifyChain([parentToken, omittedChild]);
+    expect(result.valid).toBe(false);
+    expect(result.errors).toContainEqual(
+      expect.stringContaining("constraint 'signing'")
     );
   });
 });

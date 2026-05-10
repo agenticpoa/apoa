@@ -57,6 +57,11 @@ class JWKSResolver:
     """Caches a remote JWKS and resolves public keys by ``kid``.
 
     Compatible with the ``key_resolver`` option on ``ValidationOptions``.
+
+    By default the resolver rejects non-``https://`` URLs because APOA
+    mandates TLS 1.3+ for all communication (SPEC §13.2). For local
+    development against a non-HTTPS endpoint, pass ``allow_insecure=True``
+    or supply a custom ``http_get`` callable.
     """
 
     def __init__(
@@ -66,7 +71,13 @@ class JWKSResolver:
         cache_max_age: float = 3600.0,
         cooldown: float = 86400.0,
         http_get: Callable[[str], bytes] | None = None,
+        allow_insecure: bool = False,
     ) -> None:
+        if http_get is None and not allow_insecure and not url.startswith("https://"):
+            raise ValueError(
+                f"JWKS URL must use https:// (got: {url!r}). "
+                "Pass allow_insecure=True or a custom http_get for local development."
+            )
         self.url = url
         self.cache_max_age = cache_max_age
         self.cooldown = cooldown
@@ -78,16 +89,25 @@ class JWKSResolver:
         for key in jwks.get("keys", []):
             if key.get("kid") == kid:
                 alg = key.get("alg")
+                # APOA only specifies EdDSA and ES256 (SPEC §4.1, §13.2).
+                # Reject any other alg to prevent algorithm-confusion attacks
+                # if a JWKS host serves a wider key set.
                 if alg == "EdDSA":
                     return jwt.algorithms.OKPAlgorithm.from_jwk(key)
-                if alg in ("ES256", "ES384", "ES512"):
+                if alg == "ES256":
                     return jwt.algorithms.ECAlgorithm.from_jwk(key)
-                # Fall back to OKP for typical APOA usage; raise if neither shape fits.
-                if key.get("kty") == "OKP":
-                    return jwt.algorithms.OKPAlgorithm.from_jwk(key)
-                if key.get("kty") == "EC":
-                    return jwt.algorithms.ECAlgorithm.from_jwk(key)
-                raise ValueError(f"unsupported JWK kty: {key.get('kty')}")
+                if alg is None:
+                    # Some publishers omit alg; infer from kty + crv.
+                    kty = key.get("kty")
+                    crv = key.get("crv")
+                    if kty == "OKP" and crv == "Ed25519":
+                        return jwt.algorithms.OKPAlgorithm.from_jwk(key)
+                    if kty == "EC" and crv == "P-256":
+                        return jwt.algorithms.ECAlgorithm.from_jwk(key)
+                raise ValueError(
+                    f"unsupported JWK alg='{alg}' kty='{key.get('kty')}' crv='{key.get('crv')}'; "
+                    "APOA accepts only EdDSA (Ed25519) and ES256 (P-256)"
+                )
         return None
 
     def _get_jwks(self) -> JWKS:
@@ -113,6 +133,7 @@ def create_jwks_resolver(
     cache_max_age: float = 3600.0,
     cooldown: float = 86400.0,
     http_get: Callable[[str], bytes] | None = None,
+    allow_insecure: bool = False,
 ) -> JWKSResolver:
     """Create a ``JWKSResolver`` for the given JWKS URL.
 
@@ -124,12 +145,16 @@ def create_jwks_resolver(
     ``http_get`` lets callers supply a custom HTTP fetcher (useful in tests
     or behind a corporate proxy). It must accept a URL string and return
     raw response bytes.
+
+    Non-``https://`` URLs are rejected unless ``allow_insecure=True`` or a
+    custom ``http_get`` is supplied; APOA mandates TLS for all communication.
     """
     return JWKSResolver(
         url,
         cache_max_age=cache_max_age,
         cooldown=cooldown,
         http_get=http_get,
+        allow_insecure=allow_insecure,
     )
 
 

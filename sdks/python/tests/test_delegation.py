@@ -96,18 +96,40 @@ class TestDelegate:
                 SigningOptions(private_key=keys[0]),
             )
 
-    def test_cannot_remove_rules(self, delegatable_token):
+    def test_child_inherits_omitted_false_constraint(self, delegatable_token):
+        # Regression: previously _verify_attenuation only rejected child=True
+        # and silently accepted child=undefined. delegate() now inherits the
+        # parent's `signing: False` into the child even when the input omits
+        # constraints, so the child token's authorize() still enforces it.
         parent, keys = delegatable_token
-        with pytest.raises(AttenuationViolationError, match="removes parent rule"):
-            delegate(
-                parent,
-                DelegationDefinition(
-                    agent=Agent(id="did:apoa:sub"),
-                    services=[ServiceAuthorization(service="test.com", scopes=["read"])],
-                    # Missing "no-signing" rule from parent
-                ),
-                SigningOptions(private_key=keys[0]),
-            )
+        child = delegate(
+            parent,
+            DelegationDefinition(
+                agent=Agent(id="did:apoa:sub"),
+                services=[ServiceAuthorization(service="test.com", scopes=["read"])],  # no constraints
+                rules=[Rule(id="no-signing", description="No signing", enforcement="hard")],
+            ),
+            SigningOptions(private_key=keys[0]),
+        )
+        child_constraints = child.definition.services[0].constraints or {}
+        assert child_constraints.get("signing") is False
+
+    def test_child_inherits_parent_rules_when_omitted(self, delegatable_token):
+        # delegate() merges parent rules into the child so they cannot be
+        # silently dropped by a delegating agent. The child token is signed
+        # with the merged rule set even when the input omits them.
+        parent, keys = delegatable_token
+        child = delegate(
+            parent,
+            DelegationDefinition(
+                agent=Agent(id="did:apoa:sub"),
+                services=[ServiceAuthorization(service="test.com", scopes=["read"])],
+                # Intentionally omits "no-signing" — delegate() must inherit it
+            ),
+            SigningOptions(private_key=keys[0]),
+        )
+        rule_ids = {r.id for r in (child.definition.rules or [])}
+        assert "no-signing" in rule_ids
 
     def test_can_add_extra_rules(self, delegatable_token):
         parent, keys = delegatable_token
@@ -211,3 +233,47 @@ class TestVerifyChain:
         result = verify_chain([parent, child], revocation_store=store)
         assert result.valid is False
         assert any("revoked" in e for e in result.errors)
+
+    def test_chain_fails_when_child_relaxes_constraint(self, delegatable_token):
+        # Forge a child that flips a parent False constraint to True,
+        # bypassing delegate()'s inheritance — same shape as a malicious token.
+        parent, keys = delegatable_token
+        opts = SigningOptions(private_key=keys[0])
+        flipped_child_def = APOADefinition(
+            principal=parent.definition.principal,
+            agent=Agent(id="did:apoa:relaxed-child"),
+            services=[
+                ServiceAuthorization(
+                    service="test.com",
+                    scopes=["read"],
+                    constraints={"signing": True},
+                )
+            ],
+            rules=[Rule(id="no-signing", description="No signing", enforcement="hard")],
+            expires=parent.definition.expires,
+        )
+        flipped_child = create_token(flipped_child_def, opts, parent_token_id=parent.jti)
+        result = verify_chain([parent, flipped_child])
+        assert result.valid is False
+        assert any("constraint 'signing'" in e for e in result.errors)
+
+    def test_chain_fails_when_child_omits_constraint(self, delegatable_token):
+        # Parent has signing: False; child omits it entirely. Without the
+        # constraint check in verify_chain, the child's authorize() would
+        # skip the signing check — silent privilege escalation.
+        parent, keys = delegatable_token
+        opts = SigningOptions(private_key=keys[0])
+        omitted_child_def = APOADefinition(
+            principal=parent.definition.principal,
+            agent=Agent(id="did:apoa:omitted-child"),
+            services=[
+                ServiceAuthorization(service="test.com", scopes=["read"])
+                # No constraints at all
+            ],
+            rules=[Rule(id="no-signing", description="No signing", enforcement="hard")],
+            expires=parent.definition.expires,
+        )
+        omitted_child = create_token(omitted_child_def, opts, parent_token_id=parent.jti)
+        result = verify_chain([parent, omitted_child])
+        assert result.valid is False
+        assert any("constraint 'signing'" in e for e in result.errors)

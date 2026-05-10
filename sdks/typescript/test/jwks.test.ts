@@ -136,4 +136,25 @@ describe('createJWKSResolver', () => {
 
     await expect(resolver.resolve('any')).rejects.toThrow(/JWKS fetch failed/);
   });
+
+  it('rejects http:// URLs by default', () => {
+    expect(() =>
+      createJWKSResolver('http://example.invalid/jwks.json')
+    ).toThrow(/https:\/\//);
+  });
+
+  it('accepts http:// URLs when allowInsecure is true', () => {
+    expect(() =>
+      createJWKSResolver('http://localhost:3000/jwks.json', {
+        allowInsecure: true,
+      })
+    ).not.toThrow();
+  });
+
+  it('accepts http:// URLs when a custom fetch is supplied', () => {
+    const fakeFetch = (async () => new Response('{}', { status: 200 })) as unknown as typeof fetch;
+    expect(() =>
+      createJWKSResolver('http://example.invalid/jwks.json', { fetch: fakeFetch })
+    ).not.toThrow();
+  });
 });

@@ -112,13 +112,15 @@ The APOA Token is a signed JWT (RFC 7519) with the following structure:
 
 ```json
 {
-  "alg": "ES256",
+  "alg": "EdDSA",
   "typ": "apoa+jwt",
   "kid": "apoa-auth-server-key-2026-01"
 }
 ```
 
-APOA Tokens MUST use asymmetric signing algorithms. Recommended: ES256 (ECDSA with P-256 and SHA-256). RSA (RS256) is acceptable. Symmetric algorithms (HS256) MUST NOT be used.
+APOA Tokens MUST use asymmetric signing algorithms. Recommended: **EdDSA** (Ed25519 — RFC 8037). **ES256** (ECDSA with P-256 and SHA-256) is also acceptable, e.g. for HSMs that don't support Ed25519. Symmetric algorithms (HS256, etc.) MUST NOT be used. Other asymmetric algorithms (RS256, ES384, ES512) are not part of the conformance baseline; implementations MAY accept them but interoperable tokens SHOULD use EdDSA or ES256.
+
+Ed25519 is the default because it is faster, deterministic, produces smaller signatures (~64 bytes vs ~70 for ES256), avoids the malleability and nonce-reuse pitfalls of ECDSA, and is the modern recommendation for new protocols (TLS 1.3, OpenSSH, RFC 8410, the upcoming JOSE refresh). The reference SDKs default to EdDSA accordingly.
 
 ### 4.2 Payload (Claims)
 
@@ -514,7 +516,7 @@ This packaging enables APOA authorizations to be stored in digital wallets, veri
 
 ### 13.2 Mandatory Security Requirements
 
-1. All APOA Tokens MUST use asymmetric signing (ES256 recommended)
+1. All APOA Tokens MUST use asymmetric signing (EdDSA recommended; ES256 acceptable)
 2. All communication MUST use TLS 1.3 or later
 3. Tokens MUST have finite expiration (`exp` claim is REQUIRED)
 4. Default `delegation_depth` MUST be 0 (no re-delegation)

@@ -31,7 +31,6 @@ def delegate(
     - Additional rules can only be added, not removed
     """
     current_depth = _count_depth(parent_token)
-    _verify_attenuation(parent_token, child_def, current_depth)
 
     parent_def = parent_token.definition
 
@@ -45,10 +44,12 @@ def delegate(
     child_depth = current_depth + 1
     child_metadata = {**(child_def.metadata or {}), "_delegationDepth": child_depth}
 
-    # Inherit parent's false constraints into child services.
-    # If parent says { signing: false }, the child MUST carry that constraint
-    # even if the delegation definition omits it. Otherwise the child's
-    # authorize() would skip the constraint check entirely (privilege escalation).
+    # Inherit parent's false constraints into child services BEFORE attenuation
+    # check. If parent says { signing: false }, the child MUST carry that
+    # constraint even if the delegation definition omits it — otherwise the
+    # child's authorize() would skip the check entirely (privilege escalation).
+    # _verify_attenuation now treats omission as relaxation, so inheritance
+    # must happen before verification or strict callers would fail here.
     inherited_services = []
     for child_svc in child_def.services:
         parent_svc = next((s for s in parent_def.services if s.service == child_svc.service), None)
@@ -68,6 +69,16 @@ def delegate(
                 inherited_services.append(child_svc)
         else:
             inherited_services.append(child_svc)
+
+    # Now verify attenuation against the inherited (filled-in) child definition.
+    inherited_child_def = DelegationDefinition(
+        agent=child_def.agent,
+        services=inherited_services,
+        rules=merged_rules or None,
+        expires=child_def.expires,
+        metadata=child_def.metadata,
+    )
+    _verify_attenuation(parent_token, inherited_child_def, current_depth)
 
     full_definition = APOADefinition(
         principal=parent_def.principal,
@@ -204,8 +215,8 @@ def _verify_attenuation(
             if pid not in child_rule_ids:
                 raise AttenuationViolationError(
                     f"Child removes parent rule '{pid}'. Rules can only be added, not removed.",
-                    [],
-                    [],
+                    parent_scopes,
+                    child_scopes,
                 )
 
 
@@ -221,17 +232,25 @@ def _verify_scope_subset(parent: ServiceAuthorization, child: ServiceAuthorizati
 
 
 def _verify_constraints_not_relaxed(parent: ServiceAuthorization, child: ServiceAuthorization) -> None:
+    """A constraint set to False in the parent must remain False in the child.
+
+    Setting it to True flips it (relaxation), and omitting it makes the child's
+    authorize() skip the check entirely (silent relaxation). Both fail.
+    """
     if not parent.constraints:
         return
     for key, parent_value in parent.constraints.items():
         if parent_value is False:
             child_value = (child.constraints or {}).get(key)
-            if child_value is True:
-                raise AttenuationViolationError(
-                    f"Child relaxes constraint '{key}' on service '{child.service}' (parent: false, child: true)",
-                    parent.scopes,
-                    child.scopes,
-                )
+            if child_value is False:
+                continue
+            raise AttenuationViolationError(
+                f"Child relaxes constraint '{key}' on service '{child.service}' (parent: false, child: true)"
+                if child_value is True
+                else f"Child omits constraint '{key}' on service '{child.service}' (parent: false, child: undefined)",
+                parent.scopes,
+                child.scopes,
+            )
 
 
 def _check_token_validity(
@@ -264,6 +283,19 @@ def _check_attenuation(
         for child_scope in child_svc.scopes:
             if not any(match_scope(ps, child_scope) for ps in parent_svc.scopes):
                 errors.append(f"Chain link {index}: scope '{child_scope}' on '{child_svc.service}' not covered by parent")
+
+        # Constraints not relaxed: a parent False must remain False. True flips
+        # it (relaxation), None makes the child's authorize() skip the check
+        # (silent relaxation).
+        if parent_svc.constraints:
+            for key, parent_value in parent_svc.constraints.items():
+                if parent_value is False:
+                    child_value = (child_svc.constraints or {}).get(key)
+                    if child_value is not False:
+                        rendered = "undefined" if child_value is None else repr(child_value)
+                        errors.append(
+                            f"Chain link {index}: constraint '{key}' on '{child_svc.service}' relaxed by child (parent: false, child: {rendered})"
+                        )
 
     # Child expiration <= parent
     from .utils import _to_datetime

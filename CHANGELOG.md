@@ -8,6 +8,15 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and
 
 ## [Unreleased]
 
+### Security
+
+- **Constraint attenuation hardening (both SDKs).** A child delegation that omitted a parent's `false` constraint (e.g. parent `{ signing: false }`, child with no constraints) previously slipped through `verifyAttenuation` / `_verify_attenuation` and caused the child's `authorize()` to skip the constraint check entirely. Both SDKs now treat omission as relaxation and reject it. `delegate()` already inherited parent `false` constraints into the child before signing, so tokens minted via `delegate()` are unaffected — but external callers using `verifyAttenuation` to gate trust on a third-party child token now get the strict semantics they were already documented as receiving.
+- **`verifyChain` / `verify_chain` now compare constraints between adjacent tokens.** Previously the chain verifier checked scope subset, expiration, and parent linkage but never inspected `constraints`. A forged child JWT that flipped or omitted a parent's `false` constraint passed chain verification. Both SDKs now flag any constraint relaxation as a chain error.
+
+### Changed
+
+- **BREAKING (`@apoa/core`):** `revoke()`, `isRevoked()`, and `cascadeRevoke()` no longer accept an optional `RevocationStore` — the store argument is required. The previous module-level `defaultStore` singletons silently diverged from the store used by `createClient()` and any caller-supplied store, producing revocations that appeared to succeed but were never enforced. Callers that omitted the store must now pass one explicitly. The Python SDK already required the store at runtime; this aligns the TypeScript surface.
+
 ### Added
 
 - `docs/FAQ.md` and `docs/PRIOR_ART.md` — long-form prose moved out of the README to keep the entry point tight.

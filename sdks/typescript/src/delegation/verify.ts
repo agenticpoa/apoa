@@ -113,11 +113,23 @@ async function checkTokenValidity(
 }
 
 /**
- * Verify that a child token's scopes are a subset of the parent's.
+ * Verify that a child token attenuates the parent: scopes are a subset,
+ * constraints are not relaxed (a parent `false` must remain `false`), and
+ * expiration does not extend beyond the parent.
  */
 function checkAttenuation(
-  parent: { definition: { services: { service: string; scopes: string[] }[]; expires: Date | string } },
-  child: { definition: { services: { service: string; scopes: string[] }[]; expires: Date | string } },
+  parent: {
+    definition: {
+      services: { service: string; scopes: string[]; constraints?: Record<string, unknown> }[];
+      expires: Date | string;
+    };
+  },
+  child: {
+    definition: {
+      services: { service: string; scopes: string[]; constraints?: Record<string, unknown> }[];
+      expires: Date | string;
+    };
+  },
   index: number,
   errors: string[]
 ): void {
@@ -143,6 +155,22 @@ function checkAttenuation(
         errors.push(
           `Chain link ${index}: scope '${childScope}' on '${childService.service}' not covered by parent`
         );
+      }
+    }
+
+    // Check constraints are not relaxed. Any parent constraint set to false
+    // must also be false on the child — true flips it (relaxation), undefined
+    // means the child's authorize() skips the check (silent relaxation).
+    if (parentService.constraints) {
+      for (const [key, parentValue] of Object.entries(parentService.constraints)) {
+        if (parentValue === false) {
+          const childValue = childService.constraints?.[key];
+          if (childValue !== false) {
+            errors.push(
+              `Chain link ${index}: constraint '${key}' on '${childService.service}' relaxed by child (parent: false, child: ${childValue === undefined ? 'undefined' : JSON.stringify(childValue)})`
+            );
+          }
+        }
       }
     }
   }

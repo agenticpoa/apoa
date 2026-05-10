@@ -82,7 +82,12 @@ export function verifyAttenuation(
 
   // Check rules: child can only add, not remove
   if (parentDef.rules && parentDef.rules.length > 0) {
-    verifyRulesNotRemoved(parentDef.rules.map((r) => r.id), child);
+    verifyRulesNotRemoved(
+      parentDef.rules.map((r) => r.id),
+      child,
+      parentDef.services.flatMap((s) => s.scopes),
+      child.services.flatMap((s) => s.scopes)
+    );
   }
 }
 
@@ -109,7 +114,11 @@ function verifyScopeSubset(
 
 /**
  * Verify child constraints do not relax parent constraints.
- * A constraint set to false in the parent cannot be set to true in the child.
+ *
+ * A constraint set to `false` in the parent must remain `false` in the child:
+ * setting it to `true` flips it (relaxation), and omitting it makes the
+ * child's authorize() skip the check entirely (silent relaxation). Both fail.
+ *
  * New constraints can be added by the child (they only restrict further).
  */
 function verifyConstraintsNotRelaxed(
@@ -121,17 +130,14 @@ function verifyConstraintsNotRelaxed(
   for (const [key, parentValue] of Object.entries(parent.constraints)) {
     if (parentValue === false) {
       const childValue = child.constraints?.[key];
-      if (childValue === true || childValue === undefined) {
-        // If parent says "no signing" (false), child can't enable it (true)
-        // or omit it (undefined means no restriction = relaxing)
-        if (childValue === true) {
-          throw new AttenuationViolationError(
-            `Child relaxes constraint '${key}' on service '${child.service}' (parent: false, child: true)`,
-            parent.scopes,
-            child.scopes
-          );
-        }
-      }
+      if (childValue === false) continue;
+      throw new AttenuationViolationError(
+        childValue === true
+          ? `Child relaxes constraint '${key}' on service '${child.service}' (parent: false, child: true)`
+          : `Child omits constraint '${key}' on service '${child.service}' (parent: false, child: undefined)`,
+        parent.scopes,
+        child.scopes
+      );
     }
   }
 }
@@ -142,15 +148,17 @@ function verifyConstraintsNotRelaxed(
  */
 function verifyRulesNotRemoved(
   parentRuleIds: string[],
-  child: DelegationDefinition
+  child: DelegationDefinition,
+  parentScopes: string[],
+  childScopes: string[]
 ): void {
   const childRuleIds = new Set(child.rules?.map((r) => r.id) ?? []);
   for (const parentRuleId of parentRuleIds) {
     if (!childRuleIds.has(parentRuleId)) {
       throw new AttenuationViolationError(
         `Child removes parent rule '${parentRuleId}'. Rules can only be added, not removed.`,
-        [],
-        []
+        parentScopes,
+        childScopes
       );
     }
   }

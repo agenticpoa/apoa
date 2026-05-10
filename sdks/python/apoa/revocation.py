@@ -38,7 +38,7 @@ def revoke(
     reason: str | None = None,
     store: RevocationStore | None = None,
 ) -> RevocationRecord:
-    """Revoke a single token."""
+    """Revoke a single token. ``store`` is required (kwarg for ergonomics)."""
     if store is None:
         raise ValueError("revocation store is required")
 
@@ -65,7 +65,7 @@ def cascade_revoke(
     reason: str | None = None,
     store: RevocationStore | None = None,
 ) -> RevocationRecord:
-    """Cascade revoke: revoke a parent token and all child tokens."""
+    """Cascade revoke a parent token and all child tokens. ``store`` is required."""
     if store is None:
         raise ValueError("revocation store is required")
 

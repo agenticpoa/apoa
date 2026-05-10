@@ -56,6 +56,11 @@ export interface JWKSResolverOptions {
   cooldownMs?: number;
   /** Custom fetch implementation; defaults to the global fetch. */
   fetch?: typeof fetch;
+  /**
+   * Allow non-https:// JWKS URLs. Off by default because APOA mandates TLS
+   * for all communication (SPEC §13.2). Use only for local development.
+   */
+  allowInsecure?: boolean;
 }
 
 /**
@@ -69,6 +74,12 @@ export function createJWKSResolver(
   url: string,
   options: JWKSResolverOptions = {}
 ): KeyResolver {
+  if (!options.fetch && !options.allowInsecure && !url.startsWith('https://')) {
+    throw new Error(
+      `JWKS URL must use https:// (got: ${JSON.stringify(url)}). ` +
+        'Pass allowInsecure: true or a custom fetch for local development.'
+    );
+  }
   const cacheMaxAgeMs = options.cacheMaxAgeMs ?? 60 * 60 * 1000;
   const cooldownMs = options.cooldownMs ?? 24 * 60 * 60 * 1000;
   const fetchImpl = options.fetch ?? fetch;

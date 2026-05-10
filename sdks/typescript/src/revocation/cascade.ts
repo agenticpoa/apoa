@@ -4,26 +4,26 @@ import type {
   RevocationRecord,
   RevocationStore,
 } from '../types.js';
-import { MemoryRevocationStore } from './store.js';
-
-const defaultStore = new MemoryRevocationStore();
 
 /**
- * Cascade revoke: revoke a parent token and all child tokens in a delegation chain.
- * Populates RevocationRecord.cascaded with child token IDs.
+ * Cascade revoke: revoke a parent token and all child tokens in a delegation
+ * chain. Populates RevocationRecord.cascaded with child token IDs.
+ *
+ * The caller MUST supply a RevocationStore. There is no default store: a
+ * process-shared singleton would silently diverge from the store used by
+ * `createClient()` and any caller-supplied store.
  *
  * @param parentTokenId - The parent token's jti to revoke
  * @param childTokenIds - Array of child token jti values to cascade-revoke
  * @param options - Revocation options (revokedBy, reason)
- * @param store - Optional revocation store
+ * @param store - The revocation store to write to
  */
 export async function cascadeRevoke(
   parentTokenId: string,
   childTokenIds: string[],
   options: RevocationOptions,
-  store?: RevocationStore
+  store: RevocationStore
 ): Promise<RevocationRecord> {
-  const s = store ?? defaultStore;
   const revokedAt = new Date();
 
   // Revoke all children
@@ -37,7 +37,7 @@ export async function cascadeRevoke(
         : `Cascade revocation from parent ${parentTokenId}`,
       cascaded: [],
     };
-    await s.add(childRecord);
+    await store.add(childRecord);
   }
 
   // Revoke parent with cascaded list
@@ -48,7 +48,7 @@ export async function cascadeRevoke(
     reason: options.reason,
     cascaded: childTokenIds,
   };
-  await s.add(parentRecord);
+  await store.add(parentRecord);
 
   return parentRecord;
 }

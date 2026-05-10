@@ -163,3 +163,41 @@ class TestCreateJWKSResolver:
         # Second resolve: refresh fails, falls back to cached value.
         assert resolver.resolve("cached") is not None
         assert call["i"] == 2
+
+    def test_rejects_http_url_by_default(self):
+        with pytest.raises(ValueError, match="https://"):
+            create_jwks_resolver("http://example.invalid/jwks.json")
+
+    def test_accepts_http_url_when_allow_insecure(self):
+        # Should not raise during construction.
+        create_jwks_resolver(
+            "http://localhost:3000/jwks.json", allow_insecure=True
+        )
+
+    def test_accepts_http_url_with_custom_http_get(self):
+        # Custom http_get implies caller knows what they're doing (tests, proxy).
+        create_jwks_resolver(
+            "http://example.invalid/jwks.json", http_get=lambda url: b"{}"
+        )
+
+    def test_rejects_unsupported_alg(self):
+        # APOA only accepts EdDSA and ES256. A JWKS that publishes an RS256
+        # key for the requested kid must be rejected.
+        rsa_jwk = {
+            "kid": "rsa-1",
+            "kty": "RSA",
+            "alg": "RS256",
+            "n": "abc",
+            "e": "AQAB",
+            "use": "sig",
+        }
+        jwks = {"keys": [rsa_jwk]}
+
+        def fake_get(url):
+            return json.dumps(jwks).encode()
+
+        resolver = create_jwks_resolver(
+            "https://example.invalid/jwks.json", http_get=fake_get
+        )
+        with pytest.raises(ValueError, match="EdDSA.*ES256"):
+            resolver.resolve("rsa-1")

@@ -27,9 +27,6 @@ export async function delegate(
   // delegation we pass 0 (first delegation).
   const currentDepth = countDepth(parentToken);
 
-  // Verify attenuation rules
-  verifyAttenuation(parentToken, childDef, currentDepth);
-
   // Build the child definition, inheriting principal from parent
   const parentDef = parentToken.definition;
 
@@ -47,10 +44,12 @@ export async function delegate(
     _delegationDepth: childDepth,
   };
 
-  // Inherit parent's false constraints into child services.
-  // If parent says { signing: false }, the child MUST carry that constraint
-  // even if the delegation definition omits it. Otherwise the child's
-  // authorize() would skip the constraint check entirely (privilege escalation).
+  // Inherit parent's false constraints into child services BEFORE attenuation
+  // check. If parent says { signing: false }, the child MUST carry that
+  // constraint even if the delegation definition omits it — otherwise the
+  // child's authorize() would skip the constraint check entirely (privilege
+  // escalation). verifyAttenuation now treats omission as relaxation, so
+  // the inheritance must happen first or strict callers would fail here.
   const inheritedServices = childDef.services.map((childSvc) => {
     const parentSvc = parentDef.services.find((s) => s.service === childSvc.service);
     if (!parentSvc?.constraints) return childSvc;
@@ -68,6 +67,13 @@ export async function delegate(
       constraints: { ...inherited, ...childSvc.constraints },
     };
   });
+
+  // Now verify attenuation against the inherited (filled-in) child definition.
+  verifyAttenuation(
+    parentToken,
+    { ...childDef, services: inheritedServices, rules: mergedRules },
+    currentDepth
+  );
 
   const fullDefinition: APOADefinition = {
     principal: parentDef.principal, // Inherited — cannot be overridden

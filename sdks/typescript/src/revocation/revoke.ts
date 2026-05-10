@@ -3,20 +3,19 @@ import type {
   RevocationRecord,
   RevocationStore,
 } from '../types.js';
-import { MemoryRevocationStore } from './store.js';
-
-const defaultStore = new MemoryRevocationStore();
 
 /**
- * Revoke a token. No cascade logic — that's Phase 3.
+ * Revoke a token. The caller MUST supply a RevocationStore so the revocation
+ * is durable and visible to other parts of the system. There is no default
+ * store: a process-shared singleton would silently diverge from the store
+ * used by `createClient()` and any caller-supplied store, producing
+ * "succeeded but never enforced" revocations.
  */
 export async function revoke(
   tokenId: string,
   options: RevocationOptions,
-  store?: RevocationStore
+  store: RevocationStore
 ): Promise<RevocationRecord> {
-  const s = store ?? defaultStore;
-
   const record: RevocationRecord = {
     tokenId,
     revokedAt: new Date(),
@@ -25,18 +24,18 @@ export async function revoke(
     cascaded: [],
   };
 
-  await s.add(record);
+  await store.add(record);
   return record;
 }
 
 /**
- * Check if a token has been revoked.
+ * Check if a token has been revoked. Caller must supply the same
+ * RevocationStore that revoke() wrote to.
  */
 export async function isRevoked(
   tokenId: string,
-  store?: RevocationStore
+  store: RevocationStore
 ): Promise<boolean> {
-  const s = store ?? defaultStore;
-  const record = await s.check(tokenId);
+  const record = await store.check(tokenId);
   return record !== null;
 }
