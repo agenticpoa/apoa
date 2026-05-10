@@ -107,6 +107,8 @@ result = client.authorize(token, "nationwidemortgage.com", "documents:sign")
 
 The SDKs handle token creation, signing, validation, scope checking, constraint enforcement, hard/soft rule enforcement, delegation with capability attenuation, chain verification, cascade revocation, and audit logging. See [`sdks/typescript/`](sdks/typescript/) for TypeScript and [`sdks/python/`](sdks/python/) for Python.
 
+For production deployments, the `RevocationStore` and `AuditStore` interfaces are pluggable — point them at Redis, Postgres, DynamoDB, or whatever fits your stack. See [`docs/STORES.md`](docs/STORES.md) for concrete adapter recipes in both languages.
+
 ---
 
 ## Cross-SDK Compatibility
