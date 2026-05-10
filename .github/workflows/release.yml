@@ -11,8 +11,10 @@ name: Release
 #   PyPI: configure a Trusted Publisher for `apoa` pointing to this repo
 #         + workflow file (`release.yml`) + environment `pypi`.
 #         https://docs.pypi.org/trusted-publishers/
-#   npm:  add an `NPM_TOKEN` secret with publish access to `@apoa/core`.
-#         The workflow uses `--provenance` so npm signs the release.
+#   npm:  configure a Trusted Publisher for `@apoa/core` pointing to this
+#         repo + workflow file (`release.yml`). No environment, no token.
+#         Requires npm CLI >= 11.5.1 (we install `npm@latest` below).
+#         https://docs.npmjs.com/trusted-publishers
 
 on:
   push:
@@ -112,6 +114,12 @@ jobs:
           node-version: '20'
           registry-url: 'https://registry.npmjs.org'
 
+      - name: Upgrade npm CLI for OIDC trusted publishing
+        # Trusted Publishing landed in npm 11.5.1 (Sept 2025). Node 20 LTS
+        # ships with npm 10.x, which falls back to token auth and fails when
+        # no NODE_AUTH_TOKEN is set.
+        run: npm install -g npm@latest
+
       - name: Verify tag matches package.json version
         working-directory: sdks/typescript
         run: |
@@ -135,10 +143,11 @@ jobs:
         working-directory: sdks/typescript
         run: npm run build
 
-      - name: Publish to npm with provenance
+      - name: Publish to npm via OIDC Trusted Publisher (with provenance)
+        # No NODE_AUTH_TOKEN: npm picks up the GitHub Actions OIDC identity
+        # and the npm registry resolves it against the configured Trusted
+        # Publisher rule (this repo + this workflow file).
         working-directory: sdks/typescript
-        env:
-          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
         run: npm publish --provenance --access public
 
       - name: Extract release notes
