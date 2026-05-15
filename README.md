@@ -278,9 +278,9 @@ ZCAP-LD is the closest — we build on it directly. But it doesn't address brows
 
 ## Prior Art & Related Work
 
-APOA was designed in February 2026. We later found independent work arriving at similar conclusions from different directions — IETF Power of Attorney drafts for IoT, Google DeepMind's Intelligent AI Delegation paper, the MCP 2026 security roadmap, and active IETF Internet-Drafts on agent auth within OAuth.
+Authorization for AI agents is an active area. APOA was designed independently, and we found much of the related work — including MIT's foundational delegation paper, parallel implementations, etc. — only afterward. Independent convergence on similar primitives is a good sign that the problem is real.
 
-See [`docs/PRIOR_ART.md`](docs/PRIOR_ART.md) for the full landscape and how APOA relates to each.
+See [`docs/PRIOR_ART.md`](docs/PRIOR_ART.md) for the full landscape, with dated entries and where APOA's contribution (notably Mode B, for services with no API) is distinct.
 
 ---
 
