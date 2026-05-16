@@ -74,6 +74,7 @@ export { cascadeRevoke } from './revocation/cascade.js';
 export { verifyAttenuation } from './scope/attenuate.js';
 export { delegate } from './delegation/chain.js';
 export { verifyChain } from './delegation/verify.js';
+export { getDelegationAncestorIds } from './delegation/ancestors.js';
 
 // Phase 5: JWKS publish + resolve
 export { publicKeyToJWK, buildJWKS, createJWKSResolver } from './jwks/index.js';
