@@ -10,6 +10,19 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and
 
 ---
 
+## `@apoa/core` 0.2.1 — 2026-05-16
+
+### Added
+
+- `getDelegationAncestorIds()` in the TypeScript SDK. The helper normalizes canonical `parentToken` links and transport-level `delegationChain` references into a de-duplicated ancestor token ID list for revocation checks.
+
+### Changed
+
+- `SPEC.md` now documents the nested signed JWT `definition` payload profile used by the SDKs, replacing the older flat-claim draft example.
+- README project status now distinguishes the shipped `@apoa/mcp` adapter from the still-pending formal MCP standards proposal.
+
+---
+
 ## `@apoa/core` 0.2.0 / `apoa` 0.3.0 — 2026-05-09
 
 This release closes all 11 findings from the 2026-04-12 self-audit and pulls forward a backlog of additive features (JWKS helpers, Python lockfile, examples, doc reorg).
