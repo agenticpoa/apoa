@@ -106,7 +106,12 @@ This builds on the architecture pioneered by 1Password's Secure Agentic Autofill
 
 ## 4. APOA Token Format
 
-The APOA Token is a signed JWT (RFC 7519) with the following structure:
+The APOA Token is a signed JWT (RFC 7519). Implementations use standard JWT
+claims for routing and validation, and carry the full APOA authorization in a
+signed `definition` object. Earlier drafts described a fully flat claim layout;
+the nested `definition` form is the interoperable SDK profile because it
+preserves multi-service authorizations, browser/API configuration, rules, legal
+metadata, and delegation metadata without losing structure.
 
 ### 4.1 Header
 
@@ -124,71 +129,92 @@ Ed25519 is the default because it is faster, deterministic, produces smaller sig
 
 ### 4.2 Payload (Claims)
 
-#### Required Claims
+#### Required Top-Level Claims
 
 | Claim | Type | Description |
 |---|---|---|
 | `iss` | string | Issuer — the Authorization Server that created this token |
-| `sub` | string | Subject — the Principal's identifier (DID or URI) |
-| `agt` | string | Agent — the AI agent's identifier (DID or URI) |
-| `agt_provider` | string | Agent Provider — the legal entity operating the agent |
-| `svc` | string | Service — the target service identifier (domain or URI) |
-| `scope` | string[] | Permitted actions (see Section 5) |
+| `aud` | string[] | Authorized service identifiers derived from `definition.services` |
 | `iat` | number | Issued at — Unix timestamp |
-| `nbf` | number | Not before — Unix timestamp when authorization begins |
 | `exp` | number | Expires — Unix timestamp when authorization ends |
 | `jti` | string | JWT ID — unique identifier for this token |
+| `definition` | object | The signed APOA authorization definition |
 
-#### Conditional Claims
-
-| Claim | Type | Description |
-|---|---|---|
-| `constraints` | object | Behavioral limits beyond scope (see Section 6) |
-| `delegation_depth` | number | Maximum number of re-delegations permitted (0 = no re-delegation) |
-| `delegation_chain` | object[] | Array of prior delegations in the chain, each with `from`, `to`, and `scope` |
-| `access_mode` | string | `"api"` or `"browser"` — how the agent accesses the service |
-| `audit_level` | string | `"all_actions"`, `"mutations_only"`, or `"summary"` |
-| `rules` | string[] | Natural language behavioral rules (see Section 7) |
-| `co_principal` | string | Additional human with revocation authority |
-| `renewal` | string | Renewal policy: `"none"`, `"manual"`, or `"annual_review"` |
-
-#### Optional Claims
+#### Conditional Top-Level Claims
 
 | Claim | Type | Description |
 |---|---|---|
-| `purpose` | string | Human-readable description of the authorization's purpose |
-| `apoa_version` | string | Spec version (e.g., `"0.1"`) |
-| `revocation_endpoint` | string | URI for real-time revocation checks |
-| `notification_uri` | string | Where to send action notifications to the principal |
+| `nbf` | number | Not before — Unix timestamp when authorization begins |
+
+#### Required Definition Fields
+
+| Field | Type | Description |
+|---|---|---|
+| `principal` | object | Who is granting authority |
+| `agent` | object | Which AI agent receives authority |
+| `services` | object[] | Services, scopes, constraints, and access-mode configuration |
+| `expires` | string | Expiration time as an ISO 8601 timestamp or date string |
+
+#### Optional Definition Fields
+
+| Field | Type | Description |
+|---|---|---|
+| `agentProvider` | object | The legal entity operating the agent |
+| `rules` | object[] | Behavioral rules with `hard` or `soft` enforcement |
+| `notBefore` | string | Start time as an ISO 8601 timestamp or date string |
+| `revocable` | boolean | Whether the principal can revoke the token |
+| `delegatable` | boolean | Whether the agent may create attenuated child tokens |
+| `maxDelegationDepth` | number | Maximum delegation depth |
+| `metadata` | object | Flat JSON metadata; SDK keys beginning with `_` are reserved |
+| `legal` | object | Jurisdiction, legal basis, and paired-instrument metadata |
+| `parentToken` | string | Direct parent token ID for delegated tokens |
 
 ### 4.3 Example Token Payload
 
 ```json
 {
   "iss": "https://auth.agenticpoa.com",
-  "sub": "did:apoa:principal:juan_abc123",
-  "agt": "did:apoa:agent:homebot_pro_xyz",
-  "agt_provider": "homebot.ai",
-  "svc": "nationwidemortgage.com",
-  "scope": ["rate_lock:read", "documents:read", "timeline:read"],
-  "constraints": {
-    "signing": false,
-    "data_export": false
-  },
-  "rules": [
-    "Alert principal if any deadline is within 48 hours",
-    "Never sign, submit, or commit to anything"
-  ],
-  "access_mode": "browser",
-  "audit_level": "all_actions",
-  "delegation_depth": 0,
   "iat": 1709251200,
   "nbf": 1709251200,
-  "exp": 1718409600,
+  "exp": 1781481600,
   "jti": "apoa-token-9f8e7d6c-5b4a-3c2d-1e0f",
-  "purpose": "Monitor mortgage application during home purchase",
-  "apoa_version": "0.1",
-  "revocation_endpoint": "https://auth.agenticpoa.com/revoke/apoa-token-9f8e7d6c"
+  "aud": ["nationwidemortgage.com"],
+  "definition": {
+    "principal": { "id": "did:apoa:principal:juan_abc123" },
+    "agent": { "id": "did:apoa:agent:homebot_pro_xyz", "name": "HomeBot Pro" },
+    "agentProvider": { "name": "homebot.ai" },
+    "services": [{
+      "service": "nationwidemortgage.com",
+      "scopes": ["rate_lock:read", "documents:read", "timeline:read"],
+      "constraints": {
+        "signing": false,
+        "data_export": false
+      },
+      "accessMode": "browser",
+      "browserConfig": {
+        "allowedUrls": ["https://portal.nationwidemortgage.com/*"],
+        "credentialVaultRef": "1password://vault/mortgage-portal"
+      }
+    }],
+    "rules": [
+      {
+        "id": "deadline-alert",
+        "description": "Alert principal if any deadline is within 48 hours",
+        "enforcement": "soft"
+      },
+      {
+        "id": "no-signing",
+        "description": "Never sign, submit, or commit to anything",
+        "enforcement": "hard"
+      }
+    ],
+    "delegatable": false,
+    "expires": "2026-06-15T00:00:00.000Z",
+    "metadata": {
+      "purpose": "Monitor mortgage application during home purchase",
+      "apoaVersion": "0.1"
+    }
+  }
 }
 ```
 

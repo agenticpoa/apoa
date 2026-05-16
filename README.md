@@ -311,7 +311,7 @@ See [SPEC.md](SPEC.md) for the full technical specification. It's riveting. Well
 - [ ] Community feedback and iteration
 - [ ] Consumer product prototype (agent authorization dashboard)
 - [ ] Security audit
-- [ ] MCP integration proposal (Spec Enhancement Proposal)
+- [ ] MCP standards proposal (the [`@apoa/mcp`](https://github.com/agenticpoa/apoa-mcp) adapter exists; formal proposal pending)
 - [ ] Formal standards body submission
 
 ---

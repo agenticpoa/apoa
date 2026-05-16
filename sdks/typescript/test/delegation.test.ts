@@ -1,6 +1,7 @@
 import { describe, it, expect, beforeAll } from 'vitest';
 import { delegate } from '../src/delegation/chain.js';
 import { verifyChain } from '../src/delegation/verify.js';
+import { getDelegationAncestorIds } from '../src/delegation/ancestors.js';
 import { verifyAttenuation } from '../src/scope/attenuate.js';
 import { createToken } from '../src/token/create.js';
 import { generateKeyPair } from '../src/utils/crypto.js';
@@ -270,6 +271,31 @@ describe('verifyAttenuation', () => {
     expect(() => verifyAttenuation(shallowToken, child, 1)).toThrow(
       AttenuationViolationError
     );
+  });
+});
+
+describe('getDelegationAncestorIds', () => {
+  it('returns parentToken from canonical APOA tokens', async () => {
+    const child = await delegate(
+      parentToken,
+      {
+        agent: { id: 'did:apoa:sub-agent' },
+        services: [{ service: 'mychart.com', scopes: ['appointments:read'] }],
+      },
+      { privateKey: keys.privateKey }
+    );
+
+    expect(getDelegationAncestorIds(child)).toEqual([parentToken.jti]);
+  });
+
+  it('normalizes transport delegationChain metadata', () => {
+    expect(getDelegationAncestorIds({
+      delegationChain: [
+        'root-token',
+        { parentTokenId: 'middle-token' },
+        { parentTokenId: 'root-token' },
+      ],
+    })).toEqual(['root-token', 'middle-token']);
   });
 });
 
