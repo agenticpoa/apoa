@@ -29,11 +29,11 @@ Every agent authorization framework assumes your target service has an API. Mean
 
 If every service had an API, we wouldn't need APOA. They don't. So here we are.
 
-APOA fixes this with two things we haven't seen addressed together anywhere else:
+APOA combines two capabilities:
 
-**1. Browser-based agent authorization.** Your agent needs to check your mortgage rate lock. Your lender doesn't have an API. APOA authorizes a browser session where credentials come from a vault — the AI never sees them — and every action is scoped, audited, and instantly revocable.
+**1. Natural language rules that actually do something.** Not just scopes and permissions. Rules like "never sign, submit, or commit to anything" that are machine-enforced. Rules like "alert me if any deadline is within 48 hours" that are logged and trigger callbacks. The idea of compiling natural-language permissions to enforceable rules was articulated in [South et al. (2025)](docs/PRIOR_ART.md); APOA is one concrete implementation.
 
-**2. Natural language rules that actually do something.** Not just scopes and permissions. Rules like "never sign, submit, or commit to anything" that are machine-enforced. Rules like "alert me if any deadline is within 48 hours" that are logged and trigger callbacks. Traditional auth can't express this. APOA can.
+**2. Browser-based agent authorization.** Your agent needs to check your mortgage rate lock. Your lender doesn't have an API. APOA authorizes a browser session where credentials come from a vault — the AI never sees them — and every action is scoped, audited, and instantly revocable. As of May 2026 no shipping product covers this end-to-end (see [Mode B](#how-mode-b-actually-works) and [`docs/PRIOR_ART.md`](docs/PRIOR_ART.md)).
 
 ![APOA Two Access Modes — API-based and Browser-based](assets/two-modes.png)
 
@@ -256,12 +256,14 @@ Revoke the parent? Every child in the chain dies instantly. That's cascade revoc
 | OAuth 2.0 | ✅ | ❌ | ✅ | ✅ | Partial | ❌ | ❌ |
 | MCP Auth | ✅ | ❌ | ✅ | ❌ | Partial | ❌ | ❌ |
 | ZCAP-LD | ✅ | ❌ | ✅ | ✅ | ❌ | ✅ | ❌ |
+| South et al. (2025) | ✅ | ❌ | ✅ | ❌ | ✅ | ✅ | ❌ |
+| `agent-passport-system` | ✅ | ❌ | ✅ | ✅ | ✅ | ✅ | ❌ |
 | Browser automation | ❌ | ✅ | ❌ | ❌ | ❌ | ❌ | ❌ |
 | Password sharing | ❌ | ✅ | ❌ | ❌ | ❌ | ❌ | ❌ |
-| 1Password Autofill | ❌ | ✅ | ❌ | ❌ | Partial | ❌ | ❌ |
+| 1Password Autofill | ❌ | ✅ | ❌ | ❌ | ❌ | ❌ | ❌ |
 | **APOA** | **✅** | **✅** | **✅** | **✅** | **✅** | **✅** | **✅** |
 
-ZCAP-LD is the closest — we build on it directly. But it doesn't address browser-based services, audit requirements, natural language rules, or legal alignment. That's the gap.
+On the API side, the closest work is South et al.'s framework and `agent-passport-system`; APOA's distinct contribution is extending the model to browser-based services and adding explicit legal alignment. See [`docs/PRIOR_ART.md`](docs/PRIOR_ART.md) for the dated landscape.
 
 ---
 
@@ -270,8 +272,6 @@ ZCAP-LD is the closest — we build on it directly. But it doesn't address brows
 - [`@apoa/mcp`](https://github.com/agenticpoa/apoa-mcp) — APOA authorization for MCP servers. Per-tool-call scoping, delegation chains, audit trails. Middleware or proxy mode.
 - [`@apoa/a2a`](https://github.com/agenticpoa/apoa-a2a) — APOA authorization for A2A agent-to-agent communication. Scoped delegation tokens across agent hops.
 - [`sshsign`](https://github.com/agenticpoa/sshsign) — SSH-based signing service for AI agents. SSH key as identity, scoped authorization, co-sign approval with handwritten signatures, immutable audit trail. Used by the negotiation demos for cryptographic signing.
-- [`negotiate`](https://github.com/agenticpoa/negotiate) — Reference Python implementation: two agents negotiate a YC SAFE via Rubinstein alternating offers, bounded by APOA tokens, signed via `sshsign`, every offer chained to an immutable Merkle log. See [Demos](#demos).
-- [`claw-negotiate`](https://github.com/agenticpoa/claw-negotiate) — OpenClaw skill: same SAFE flow as `negotiate`, packaged for two OpenClaws to negotiate publicly in a Telegram group ([ClawHub](https://clawhub.ai/juanfiguera/claw-negotiate)). See [Demos](#demos).
 - [Jean-Claw Van Damme](https://github.com/agenticpoa/jean-claw-van-damme) — Authorization gatekeeper for OpenClaw agents ([ClawHub](https://clawhub.ai/juanfiguera/jean-claw-van-damme))
 
 ---
@@ -346,7 +346,7 @@ Apache 2.0 — see [LICENSE](LICENSE).
 
 ## Origin
 
-Agentic Power of Attorney was coined in February 2026 to address the absence of a universal standard for delegating bounded digital authority from humans to AI agents. Its mascot is Proxy, named for the oldest meaning of the word: one authorized to act on another's behalf.
+Agentic Power of Attorney was created in February 2026 to address the lack of an interoperable standard for delegating bounded digital authority from humans to AI agents. Its mascot is Proxy, named for the oldest meaning of the word: one authorized to act on another's behalf.
 
 ---
 
