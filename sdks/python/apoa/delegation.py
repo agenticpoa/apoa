@@ -304,3 +304,56 @@ def _check_attenuation(
     parent_exp = _to_datetime(parent.definition.expires).timestamp()
     if child_exp > parent_exp:
         errors.append(f"Chain link {index}: child expiration exceeds parent expiration")
+
+
+def get_delegation_ancestor_ids(input_obj: APOAToken | dict[str, Any]) -> list[str]:
+    """Return ancestor token IDs referenced by a token-like input.
+
+    Canonical SDK tokens carry the direct parent jti on ``APOAToken.parent_token``.
+    Transport adapters and raw JWT payloads may also carry a ``delegationChain``
+    array (snake_case ``delegation_chain`` is also accepted) with ancestor token
+    IDs as strings or as ``{"parentTokenId": "..."}`` entries. This helper
+    normalizes those forms into a single de-duplicated, order-preserving list so
+    revocation checks can consistently include every known ancestor.
+
+    Mirrors ``getDelegationAncestorIds`` in ``@apoa/core``.
+    """
+    ids: list[str] = []
+    seen: set[str] = set()
+
+    def push(value: Any) -> None:
+        if isinstance(value, str) and value and value not in seen:
+            seen.add(value)
+            ids.append(value)
+
+    if isinstance(input_obj, APOAToken):
+        push(input_obj.parent_token)
+        return ids
+
+    if not isinstance(input_obj, dict):
+        return ids
+
+    nested_def = input_obj.get("definition") if isinstance(input_obj.get("definition"), dict) else None
+    definition_view = nested_def if nested_def is not None else input_obj
+
+    # Top-level parentToken on the input (camelCase and snake_case both honored).
+    push(input_obj.get("parentToken"))
+    push(input_obj.get("parent_token"))
+
+    # If a nested definition exists, also look at its parentToken explicitly.
+    if nested_def is not None:
+        push(nested_def.get("parentToken"))
+        push(nested_def.get("parent_token"))
+
+    chain = definition_view.get("delegationChain")
+    if chain is None:
+        chain = definition_view.get("delegation_chain")
+
+    if isinstance(chain, list):
+        for link in chain:
+            if isinstance(link, str):
+                push(link)
+            elif isinstance(link, dict):
+                push(link.get("parentTokenId") or link.get("parent_token_id"))
+
+    return ids

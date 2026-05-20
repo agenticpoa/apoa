@@ -10,6 +10,14 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and
 
 ---
 
+## `apoa` 0.3.1 — 2026-05-19
+
+### Added
+
+- `get_delegation_ancestor_ids()` in the Python SDK. Mirrors `getDelegationAncestorIds()` from `@apoa/core` 0.2.1: normalizes a canonical `APOAToken.parent_token` and any transport-level `delegationChain` / `delegation_chain` array (with string or `{"parentTokenId": "..."}` entries) into a de-duplicated, order-preserving ancestor token ID list. Restores cross-SDK parity for the helper that was TS-only after 0.2.1.
+
+---
+
 ## `@apoa/core` 0.2.1 — 2026-05-16
 
 ### Added

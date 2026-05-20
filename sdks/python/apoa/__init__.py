@@ -12,7 +12,7 @@ from .constraints import check_constraint
 from .scope import check_scope, match_scope
 
 # Delegation
-from .delegation import delegate, verify_chain
+from .delegation import delegate, get_delegation_ancestor_ids, verify_chain
 
 # Revocation
 from .revocation import (
@@ -100,6 +100,7 @@ __all__ = [
     "check_constraint",
     # Delegation
     "delegate",
+    "get_delegation_ancestor_ids",
     "verify_chain",
     # Revocation
     "revoke",

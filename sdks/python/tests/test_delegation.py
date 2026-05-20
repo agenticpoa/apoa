@@ -13,6 +13,7 @@ from apoa import (
     create_token,
     delegate,
     generate_key_pair,
+    get_delegation_ancestor_ids,
     revoke,
     verify_chain,
 )
@@ -277,3 +278,55 @@ class TestVerifyChain:
         result = verify_chain([parent, omitted_child])
         assert result.valid is False
         assert any("constraint 'signing'" in e for e in result.errors)
+
+
+class TestGetDelegationAncestorIds:
+    def test_returns_parent_token_from_canonical_apoa_token(self, delegatable_token):
+        parent, keys = delegatable_token
+        child = delegate(
+            parent,
+            DelegationDefinition(
+                agent=Agent(id="did:apoa:sub-agent"),
+                services=[ServiceAuthorization(service="test.com", scopes=["read"])],
+                rules=[Rule(id="no-signing", description="No signing", enforcement="hard")],
+            ),
+            SigningOptions(private_key=keys[0]),
+        )
+        assert get_delegation_ancestor_ids(child) == [parent.jti]
+
+    def test_normalizes_transport_delegation_chain_metadata(self):
+        result = get_delegation_ancestor_ids({
+            "delegationChain": [
+                "root-token",
+                {"parentTokenId": "middle-token"},
+                {"parentTokenId": "root-token"},
+            ],
+        })
+        assert result == ["root-token", "middle-token"]
+
+    def test_returns_empty_for_token_with_no_parent(self, basic_token):
+        # Root tokens (no parent) should yield an empty ancestor list.
+        assert get_delegation_ancestor_ids(basic_token) == []
+
+    def test_handles_nested_definition_dict(self):
+        # Raw JWT-payload-shaped input with parentToken on the nested definition.
+        payload = {
+            "definition": {
+                "parentToken": "root-token",
+                "delegationChain": [{"parentTokenId": "middle-token"}],
+            },
+        }
+        assert get_delegation_ancestor_ids(payload) == ["root-token", "middle-token"]
+
+    def test_accepts_snake_case_keys(self):
+        # Python serialization may produce snake_case; the helper accepts both.
+        payload = {
+            "parent_token": "root-token",
+            "delegation_chain": [{"parent_token_id": "middle-token"}],
+        }
+        assert get_delegation_ancestor_ids(payload) == ["root-token", "middle-token"]
+
+    def test_ignores_non_dict_non_token_inputs(self):
+        assert get_delegation_ancestor_ids(None) == []
+        assert get_delegation_ancestor_ids("not-a-token") == []
+        assert get_delegation_ancestor_ids(42) == []
