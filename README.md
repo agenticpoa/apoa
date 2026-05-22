@@ -28,7 +28,7 @@ If every service had an API, we wouldn't need APOA. They don't. So here we are.
 
 APOA combines two capabilities:
 
-**1. Natural language rules that actually do something.** Not just scopes and permissions. Rules like "never sign, submit, or commit to anything" that are machine-enforced. Rules like "alert me if any deadline is within 48 hours" that are logged and trigger callbacks. APOA expresses both at the token level.
+**1. Natural language rules that actually do something.** Not just scopes and permissions. Rules like "never sign, submit, or commit to anything" (`enforcement: hard` — denied at `authorize()` time) and rules like "alert me if any deadline is within 48 hours" (`enforcement: soft` — logged, triggers callbacks). Enforcement is mechanical: the SDK matches on the rule's `id`, not the natural-language description. APOA expresses both at the token level — see [SPEC §7](SPEC.md#7-rules) for the schema and semantics.
 
 **2. Browser-based agent authorization.** Your agent needs to check your mortgage rate lock. Your lender doesn't have an API. APOA authorizes a browser session where credentials come from a vault — the AI never sees them — and every action is scoped, audited, and instantly revocable. As of May 2026 no shipping product covers this end-to-end (see [Mode B](#how-mode-b-actually-works) and [`docs/PRIOR_ART.md`](docs/PRIOR_ART.md)).
 

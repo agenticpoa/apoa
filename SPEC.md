@@ -293,37 +293,56 @@ Constraints are enforced at multiple layers:
 
 ---
 
-## 7. Rules (Natural Language Behavioral Directives)
+## 7. Rules
 
-Rules are human-readable behavioral instructions embedded in the APOA Token. They complement structured scope and constraints with intent-level directives that guide agent behavior in ambiguous situations.
+Rules embed behavioral directives in the APOA Token alongside structured scope and constraints. They are evaluated by the SDK at `authorize()` time and have deterministic enforcement semantics.
 
 ### 7.1 Rule Format
 
-Rules are expressed as natural language strings in an array:
+Each rule is an object with an `id`, a human-readable `description`, and an `enforcement` mode:
 
 ```json
 "rules": [
-  "Alert me if any deadline is within 48 hours",
-  "Never sign, submit, or commit to anything",
-  "Summarize new activity daily at 8am Pacific"
+  {
+    "id": "no-signing",
+    "description": "Never sign, submit, or commit to anything",
+    "enforcement": "hard"
+  },
+  {
+    "id": "deadline-alert",
+    "description": "Alert me if any deadline is within 48 hours",
+    "enforcement": "soft"
+  }
 ]
 ```
 
-### 7.2 Rule Interpretation
+The `description` is the human- and LLM-facing intent. The `id` and `enforcement` fields are what the SDK uses to evaluate the rule deterministically.
 
-Rules are interpreted by the Agent Provider's AI system. Because natural language is inherently ambiguous, rules operate as **behavioral guidance**, not enforceable constraints. Scope and constraint claims are the enforceable boundaries; rules provide intent within those boundaries.
+### 7.2 Enforcement
 
-When a rule conflicts with a scope or constraint claim, the scope/constraint takes precedence.
+The SDK enforces two modes:
+
+| Mode | Behavior |
+|---|---|
+| `hard` | When the rule's `id` (with any `no-` prefix stripped) matches a segment of the action being authorized, `authorize()` returns `authorized: false`. The action is denied. |
+| `soft` | When the rule fires, the SDK appends a `RuleViolation` to the audit store and invokes the rule's `onViolation` callback (if provided). The action continues. |
+
+Rule enforcement is mechanical: it keys off the `id` field, not LLM interpretation of the `description`. The natural-language description guides the agent's reasoning about whether to attempt an action in the first place; once an action is attempted, the SDK enforces deterministically.
+
+Rules layer on top of scope and constraints; they cannot widen them. When a rule would conflict with a scope or constraint claim, the scope/constraint takes precedence.
 
 ### 7.3 Rule Categories
 
-| Category | Example |
-|---|---|
-| **Alerting** | "Alert me if any bill is within 5 days of its due date" |
-| **Negative** | "Never communicate with providers or approve treatments" |
-| **Reporting** | "Generate weekly income summary report" |
-| **Escalation** | "If a transaction exceeds $1000, require my explicit approval" |
-| **Scheduling** | "Check waitlist position daily at 9am" |
+Common patterns expressed as rules:
+
+| Category | Example | Enforcement |
+|---|---|---|
+| **Negative** | `id: no-signing` — "Never sign, submit, or commit to anything" | `hard` |
+| **Negative** | `id: no-messaging` — "Never communicate with providers" | `hard` |
+| **Alerting** | `id: deadline-alert` — "Alert me if any deadline is within 48 hours" | `soft` |
+| **Reporting** | `id: weekly-summary` — "Generate weekly income summary report" | `soft` |
+| **Escalation** | `id: large-tx-approval` — "If a transaction exceeds $1000, require my explicit approval" | `soft` |
+| **Scheduling** | `id: waitlist-check` — "Check waitlist position daily at 9am" | `soft` |
 
 ---
 
