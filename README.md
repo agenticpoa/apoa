@@ -1,18 +1,19 @@
 [![APOA — Agentic Power of Attorney](assets/banner.png)](assets/banner.png)
 
-# 🐴 Agentic Power of Attorney (APOA)
+<h1 align="center">🐴 Agentic Power of Attorney (APOA)</h1>
 
-*Pronounced "ah-POH-ah" like aloha 🤙*
+<p align="center"><em>Pronounced "ah-POH-ah" like aloha 🤙</em></p>
 
-[![CI](https://github.com/agenticpoa/apoa/actions/workflows/ci.yml/badge.svg)](https://github.com/agenticpoa/apoa/actions/workflows/ci.yml)
-[![License: Apache 2.0](https://img.shields.io/badge/license-Apache%202.0-blue.svg)](LICENSE)
+<p align="center">
+  <a href="https://github.com/agenticpoa/apoa/actions/workflows/ci.yml"><img alt="CI" src="https://img.shields.io/github/actions/workflow/status/agenticpoa/apoa/ci.yml?branch=main&style=flat-square&label=build&labelColor=f0ece4&color=4a7c59"></a>
+  <a href="LICENSE"><img alt="License" src="https://img.shields.io/badge/license-Apache--2.0-4a7c59?style=flat-square&labelColor=f0ece4"></a>
+  <a href="https://www.npmjs.com/package/@apoa/core"><img alt="@apoa/core npm version" src="https://img.shields.io/npm/v/@apoa/core?style=flat-square&label=core&labelColor=f0ece4&color=4a7c59"></a>
+  <a href="https://www.npmjs.com/package/@apoa/core"><img alt="@apoa/core npm downloads" src="https://img.shields.io/npm/dm/@apoa/core?style=flat-square&label=npm%2Fmo&labelColor=f0ece4&color=4a7c59"></a>
+  <a href="https://pypi.org/project/apoa/"><img alt="apoa PyPI version" src="https://img.shields.io/pypi/v/apoa?style=flat-square&label=python&labelColor=f0ece4&color=4a7c59"></a>
+  <a href="https://pepy.tech/project/apoa"><img alt="apoa PyPI downloads" src="https://img.shields.io/pepy/dt/apoa?style=flat-square&label=pypi%20dl&labelColor=f0ece4&color=4a7c59"></a>
+</p>
 
-[![npm: @apoa/core](https://img.shields.io/npm/v/@apoa/core.svg?label=%40apoa%2Fcore&color=cb3837)](https://www.npmjs.com/package/@apoa/core)
-[![npm downloads](https://img.shields.io/npm/dm/@apoa/core.svg?label=npm%20downloads&color=cb3837)](https://www.npmjs.com/package/@apoa/core)
-[![PyPI: apoa](https://img.shields.io/pypi/v/apoa.svg?label=apoa&color=3776ab)](https://pypi.org/project/apoa/)
-[![PyPI downloads](https://static.pepy.tech/badge/apoa/month)](https://pepy.tech/project/apoa)
-
-**Authorization infrastructure for AI agents.**
+<p align="center"><strong>Authorization infrastructure for AI agents.</strong></p>
 
 > In January 2026, a developer [gave an AI agent access to his email, calendar, and browser](https://aaronstuyvenberg.com/posts/clawd-bought-a-car) and told it to buy him a car. The agent negotiated a $4,200 discount and closed the deal. It also sent a confidential email to the wrong person — because its entire authorization model was a natural language prompt that said "prompt me before replying to anything consequential."
 >
