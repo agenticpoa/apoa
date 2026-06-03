@@ -15,6 +15,26 @@
 
 <p align="center"><strong>Authorization infrastructure for AI agents.</strong></p>
 
+<p align="center">
+  <a href="#the-problem">Problem</a> ·
+  <a href="#the-concept">Concept</a> ·
+  <a href="#how-mode-b-actually-works">Mode B</a> ·
+  <a href="#show-me-a-real-scenario">Scenario</a> ·
+  <a href="#demos">Demos</a> ·
+  <a href="#sdks--install-it-it-works">SDKs</a> ·
+  <a href="#cross-sdk-compatibility">Compatibility</a> ·
+  <a href="#delegation-chains-they-only-shrink">Delegation</a>
+  <br>
+  <a href="#why-not-just-use">Alternatives</a> ·
+  <a href="#ecosystem">Ecosystem</a> ·
+  <a href="#prior-art--related-work">Prior Art</a> ·
+  <a href="#technical-foundation">Foundation</a> ·
+  <a href="#project-status">Status</a> ·
+  <a href="#get-involved">Get Involved</a> ·
+  <a href="#license">License</a> ·
+  <a href="#origin">Origin</a>
+</p>
+
 > In January 2026, a developer [gave an AI agent access to his email, calendar, and browser](https://aaronstuyvenberg.com/posts/clawd-bought-a-car) and told it to buy him a car. The agent negotiated a $4,200 discount and closed the deal. It also sent a confidential email to the wrong person — because its entire authorization model was a natural language prompt that said "prompt me before replying to anything consequential."
 >
 > AI agents are already negotiating, transacting, and acting on behalf of humans — with zero formal authorization, no audit trail, and no kill switch. We think the infrastructure should catch up.
