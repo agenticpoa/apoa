@@ -4,6 +4,8 @@
 
 <p align="center"><em>Pronounced "ah-POH-ah" like aloha 🤙</em></p>
 
+<p align="center"><strong>Authorization standard for AI agents.</strong></p>
+
 <p align="center">
   <a href="https://github.com/agenticpoa/apoa/actions/workflows/ci.yml"><img alt="CI" src="https://img.shields.io/github/actions/workflow/status/agenticpoa/apoa/ci.yml?branch=main&style=flat-square&label=build&labelColor=f0ece4&color=4a7c59"></a>
   <a href="LICENSE"><img alt="License" src="https://img.shields.io/badge/license-Apache--2.0-4a7c59?style=flat-square&labelColor=f0ece4"></a>
@@ -12,8 +14,6 @@
   <a href="https://pypi.org/project/apoa/"><img alt="apoa PyPI version" src="https://img.shields.io/pypi/v/apoa?style=flat-square&label=python&labelColor=f0ece4&color=4a7c59"></a>
   <a href="https://pepy.tech/project/apoa"><img alt="apoa PyPI downloads" src="https://img.shields.io/pepy/dt/apoa?style=flat-square&label=pypi%20dl&labelColor=f0ece4&color=4a7c59"></a>
 </p>
-
-<p align="center"><strong>Authorization infrastructure for AI agents.</strong></p>
 
 <p align="center">
   <a href="#the-problem">Problem</a> ·
