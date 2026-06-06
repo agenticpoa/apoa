@@ -55,7 +55,10 @@ class APOAClient:
         if options:
             return options
         if self._default_private_key is None:
-            raise ValueError("No signing options provided and no default_private_key configured")
+            raise ValueError(
+                "APOA needs a private key to create tokens. Pass private_key to APOA(private_key=...), "
+                "configure create_client(default_private_key=...), or pass SigningOptions to create_token(...)."
+            )
         return SigningOptions(private_key=self._default_private_key, algorithm=self._default_algorithm)
 
     def create_token(self, definition: APOADefinition, options: SigningOptions | None = None) -> APOAToken:

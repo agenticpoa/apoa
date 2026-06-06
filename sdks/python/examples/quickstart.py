@@ -1,42 +1,34 @@
 """Minimal example: create a token, check what the agent can and can't do."""
 
 from apoa import (
-    APOADefinition,
+    APOA,
     Agent,
-    Principal,
-    ServiceAuthorization,
-    SigningOptions,
-    check_scope,
-    create_token,
     generate_key_pair,
 )
 
 
 def main() -> None:
-    private_key, _ = generate_key_pair()
+    private_key, public_key = generate_key_pair()
+    apoa = APOA(private_key=private_key)
 
-    token = create_token(
-        APOADefinition(
-            principal=Principal(id="did:apoa:you"),
-            agent=Agent(id="did:apoa:your-agent", name="My Agent"),
-            services=[
-                ServiceAuthorization(
-                    service="mychart.com",
-                    scopes=["appointments:read", "prescriptions:read"],
-                    constraints={"signing": False, "data_export": False},
-                ),
-            ],
-            expires="2026-09-01",
-        ),
-        SigningOptions(private_key=private_key),
+    token = apoa.tokens.create_grant(
+        principal="did:apoa:you",
+        agent=Agent(id="did:apoa:your-agent", name="My Agent"),
+        service="mychart.com",
+        scopes=["appointments:read", "prescriptions:read"],
+        constraints={"signing": False, "data_export": False},
+        expires_in="30d",
     )
 
+    validation = apoa.tokens.validate(token.raw, public_key=public_key)
+    print("token valid ->", validation.valid)
+
     # Can the agent read appointments? Yes.
-    allowed = check_scope(token, "mychart.com", "appointments:read")
+    allowed = apoa.authorizations.check(token, "mychart.com", "appointments:read")
     print("appointments:read ->", allowed)
 
     # Can the agent send messages? Absolutely not.
-    denied = check_scope(token, "mychart.com", "messages:send")
+    denied = apoa.authorizations.check(token, "mychart.com", "messages:send")
     print("messages:send ->", denied)
 
 

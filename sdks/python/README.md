@@ -12,38 +12,35 @@ pip install apoa
 
 ```python
 from apoa import (
-    APOADefinition, Agent, BrowserSessionConfig, Principal,
-    Rule, ServiceAuthorization, SigningOptions,
-    create_client, generate_key_pair,
+    APOA,
+    BrowserSessionConfig,
+    generate_key_pair,
 )
 
-# Generate keys and create a client
 private_key, public_key = generate_key_pair()
-client = create_client(default_private_key=private_key)
+apoa = APOA(private_key=private_key)
 
-# Create a signed authorization token
-token = client.create_token(APOADefinition(
-    principal=Principal(id="did:apoa:you"),
-    agent=Agent(id="did:apoa:your-agent", name="HomeBot Pro"),
-    services=[ServiceAuthorization(
-        service="nationwidemortgage.com",
-        scopes=["rate_lock:read", "documents:read"],
-        constraints={"signing": False},
-        access_mode="browser",
-        browser_config=BrowserSessionConfig(
-            allowed_urls=["https://portal.nationwidemortgage.com/*"],
-            credential_vault_ref="1password://vault/mortgage-portal",
-        ),
-    )],
-    rules=[Rule(id="no-signing", description="Never sign anything", enforcement="hard")],
-    expires="2026-09-01",
-))
+token = apoa.tokens.create_grant(
+    principal="did:apoa:you",
+    agent="did:apoa:your-agent",
+    service="nationwidemortgage.com",
+    scopes=["rate_lock:read", "documents:read"],
+    constraints={"signing": False},
+    access_mode="browser",
+    browser_config=BrowserSessionConfig(
+        allowed_urls=["https://portal.nationwidemortgage.com/*"],
+        credential_vault_ref="1password://vault/mortgage-portal",
+    ),
+    expires_in="30d",
+)
 
-# Authorize actions
-result = client.authorize(token, "nationwidemortgage.com", "rate_lock:read")
+valid = apoa.tokens.validate(token.raw, public_key=public_key)
+print(valid.valid)  # True
+
+result = apoa.authorizations.check(token, "nationwidemortgage.com", "rate_lock:read")
 print(result.authorized)  # True
 
-result = client.authorize(token, "nationwidemortgage.com", "documents:sign")
+result = apoa.authorizations.check(token, "nationwidemortgage.com", "documents:sign")
 print(result.authorized)  # False
 ```
 
@@ -64,14 +61,25 @@ Tokens are JWTs. A token signed by `@apoa/core` (TypeScript) validates in `apoa`
 
 ## API
 
-Two usage styles:
+Three usage styles:
 
 ```python
-# Style 1: Client instance (recommended)
+# Style 1: Application facade (recommended for apps)
+apoa = APOA(private_key=key)
+token = apoa.tokens.create_grant(
+    principal="did:apoa:you",
+    agent="did:apoa:agent",
+    service="service.com",
+    scopes=["action:read"],
+    expires_in="30d",
+)
+apoa.authorizations.check(token, "service.com", "action:read")
+
+# Style 2: Protocol client
 client = create_client(default_private_key=key)
 client.authorize(token, "service.com", "action:read")
 
-# Style 2: Standalone imports
+# Style 3: Standalone imports
 from apoa import authorize, check_scope
 check_scope(token, "service.com", "action:read")
 ```

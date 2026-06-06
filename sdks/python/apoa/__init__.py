@@ -1,6 +1,7 @@
 """APOA SDK -- Agentic Power of Attorney for Python."""
 
 # Client
+from .apoa import APOA
 from .client import APOAClient, create_client
 
 # Token lifecycle
@@ -87,6 +88,7 @@ from .errors import (
 
 __all__ = [
     # Client
+    "APOA",
     "APOAClient",
     "create_client",
     # Token lifecycle
