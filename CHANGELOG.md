@@ -10,6 +10,21 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and
 
 ---
 
+## `@apoa/core` 0.2.2 / `apoa` 0.3.2 — 2026-06-06
+
+### Added
+
+- Application-facing `APOA` facade in both SDKs. App developers can now configure keys once and use namespaced resources:
+  - TypeScript: `new APOA({ privateKey })`, `apoa.tokens.createGrant(...)`, `apoa.tokens.validate(...)`, and `apoa.authorizations.check(...)`.
+  - Python: `APOA(private_key=...)`, `apoa.tokens.create_grant(...)`, `apoa.tokens.validate(...)`, and `apoa.authorizations.check(...)`.
+- Quickstart examples and SDK READMEs now lead with the simpler app-facing facade while keeping the protocol client and standalone helpers available for advanced usage.
+
+### Changed
+
+- Missing signing-key errors now point callers toward the new facade and existing protocol-client configuration options.
+
+---
+
 ## `apoa` 0.3.1 — 2026-05-19
 
 ### Added
