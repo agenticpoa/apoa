@@ -63,8 +63,13 @@ Tokens are JWTs. A token signed by `@apoa/core` (TypeScript) validates in `apoa`
 
 Three usage styles:
 
+### Application facade
+
+Recommended for apps. Configure keys once, then use namespaced resources.
+
 ```python
-# Style 1: Application facade (recommended for apps)
+from apoa import APOA
+
 apoa = APOA(private_key=key)
 token = apoa.tokens.create_grant(
     principal="did:apoa:you",
@@ -74,13 +79,26 @@ token = apoa.tokens.create_grant(
     expires_in="30d",
 )
 apoa.authorizations.check(token, "service.com", "action:read")
+```
 
-# Style 2: Protocol client
+### Protocol client
+
+Use this when you want direct access to stores, resolvers, and protocol-level options.
+
+```python
+from apoa import create_client
+
 client = create_client(default_private_key=key)
 client.authorize(token, "service.com", "action:read")
+```
 
-# Style 3: Standalone imports
+### Standalone imports
+
+Useful for scripts, tests, adapters, and focused protocol operations.
+
+```python
 from apoa import authorize, check_scope
+
 check_scope(token, "service.com", "action:read")
 ```
 

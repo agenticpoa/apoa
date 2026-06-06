@@ -55,10 +55,15 @@ const denied = await apoa.authorizations.check(
 - **Browser mode**: credential vault injection config (the AI never sees passwords)
 - **Comprehensive test suite** with cross-SDK fixture verification against the [Python SDK](https://pypi.org/project/apoa/)
 
-## Two Usage Styles
+## Usage Styles
+
+### Application facade
+
+Recommended for apps. Configure keys once, then use namespaced resources.
 
 ```typescript
-// Style 1: Application facade (recommended for apps)
+import { APOA } from '@apoa/core';
+
 const apoa = new APOA({ privateKey: keys.privateKey });
 const token = await apoa.tokens.createGrant({
   principal: "did:apoa:you",
@@ -68,17 +73,30 @@ const token = await apoa.tokens.createGrant({
   expiresIn: "30d",
 });
 await apoa.authorizations.check(token, "service.com", "action:read");
+```
 
-// Style 2: Protocol client
+### Protocol client
+
+Use this when you want direct access to stores, resolvers, and protocol-level options.
+
+```typescript
+import { createClient, MemoryAuditStore, MemoryRevocationStore } from '@apoa/core';
+
 const client = createClient({
   revocationStore: new MemoryRevocationStore(),
   auditStore: new MemoryAuditStore(),
   defaultSigningOptions: { privateKey: keys.privateKey },
 });
 await client.authorize(token, "service.com", "action:read");
+```
 
-// Style 3: Standalone imports (for scripts, tests, and adapters)
+### Standalone imports
+
+Useful for scripts, tests, adapters, and focused protocol operations.
+
+```typescript
 import { checkScope, authorize, createToken } from '@apoa/core';
+
 checkScope(token, "service.com", "action:read");
 ```
 

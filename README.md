@@ -151,30 +151,37 @@ npm install @apoa/core
 ```
 
 ```typescript
-import { createToken, checkScope, generateKeyPair } from '@apoa/core';
+import { APOA, generateKeyPair } from '@apoa/core';
 
 const keys = await generateKeyPair();
+const apoa = new APOA({ privateKey: keys.privateKey });
 
-const token = await createToken({
-  principal: { id: "did:apoa:you" },
+const token = await apoa.tokens.createGrant({
+  principal: "did:apoa:you",
   agent: { id: "did:apoa:your-agent", name: "HomeBot Pro" },
-  services: [{
-    service: "nationwidemortgage.com",
-    scopes: ["rate_lock:read", "documents:read"],
-    accessMode: "browser",
-    browserConfig: {
-      allowedUrls: ["https://portal.nationwidemortgage.com/*"],
-      credentialVaultRef: "1password://vault/mortgage-portal",
-    }
-  }],
-  expires: "2026-09-01"
-}, { privateKey: keys.privateKey });
+  service: "nationwidemortgage.com",
+  scopes: ["rate_lock:read", "documents:read"],
+  accessMode: "browser",
+  browserConfig: {
+    allowedUrls: ["https://portal.nationwidemortgage.com/*"],
+    credentialVaultRef: "1password://vault/mortgage-portal",
+  },
+  expiresIn: "30d",
+});
 
-checkScope(token, "nationwidemortgage.com", "rate_lock:read");
-// { allowed: true, reason: "matched scope 'rate_lock:read'" }
+const result = await apoa.authorizations.check(
+  token,
+  "nationwidemortgage.com",
+  "rate_lock:read"
+);
+// { authorized: true, checks: { revoked: false, scopeAllowed: true, ... } }
 
-checkScope(token, "nationwidemortgage.com", "documents:sign");
-// { allowed: false, reason: "scope 'documents:sign' not in authorized scopes" }
+const denied = await apoa.authorizations.check(
+  token,
+  "nationwidemortgage.com",
+  "documents:sign"
+);
+// { authorized: false, reason: "scope 'documents:sign' not in authorized scopes" }
 ```
 
 ### Python
@@ -185,32 +192,31 @@ pip install apoa
 
 ```python
 from apoa import (
-    APOADefinition, Agent, BrowserSessionConfig, Principal,
-    ServiceAuthorization, create_client, generate_key_pair,
+    APOA,
+    BrowserSessionConfig,
+    generate_key_pair,
 )
 
-private_key, public_key = generate_key_pair()
-client = create_client(default_private_key=private_key)
+private_key, _ = generate_key_pair()
+apoa = APOA(private_key=private_key)
 
-token = client.create_token(APOADefinition(
-    principal=Principal(id="did:apoa:you"),
-    agent=Agent(id="did:apoa:your-agent", name="HomeBot Pro"),
-    services=[ServiceAuthorization(
-        service="nationwidemortgage.com",
-        scopes=["rate_lock:read", "documents:read"],
-        access_mode="browser",
-        browser_config=BrowserSessionConfig(
-            allowed_urls=["https://portal.nationwidemortgage.com/*"],
-            credential_vault_ref="1password://vault/mortgage-portal",
-        ),
-    )],
-    expires="2026-09-01",
-))
+token = apoa.tokens.create_grant(
+    principal="did:apoa:you",
+    agent="did:apoa:your-agent",
+    service="nationwidemortgage.com",
+    scopes=["rate_lock:read", "documents:read"],
+    access_mode="browser",
+    browser_config=BrowserSessionConfig(
+        allowed_urls=["https://portal.nationwidemortgage.com/*"],
+        credential_vault_ref="1password://vault/mortgage-portal",
+    ),
+    expires_in="30d",
+)
 
-result = client.authorize(token, "nationwidemortgage.com", "rate_lock:read")
+result = apoa.authorizations.check(token, "nationwidemortgage.com", "rate_lock:read")
 # AuthorizationResult(authorized=True, ...)
 
-result = client.authorize(token, "nationwidemortgage.com", "documents:sign")
+result = apoa.authorizations.check(token, "nationwidemortgage.com", "documents:sign")
 # AuthorizationResult(authorized=False, reason="scope 'documents:sign' not in authorized scopes")
 ```
 
