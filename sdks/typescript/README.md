@@ -11,35 +11,35 @@ npm install @apoa/core
 ## Quick Start
 
 ```typescript
-import { createToken, checkScope, generateKeyPair, createClient } from '@apoa/core';
+import { APOA, generateKeyPair } from '@apoa/core';
 
-// Generate keys and create a client
 const keys = await generateKeyPair();
-const client = createClient({ defaultSigningOptions: { privateKey: keys.privateKey } });
+const apoa = new APOA({ privateKey: keys.privateKey });
 
-// Create a signed authorization token
-const token = await client.createToken({
-  principal: { id: "did:apoa:you" },
+const token = await apoa.tokens.createGrant({
+  principal: "did:apoa:you",
   agent: { id: "did:apoa:your-agent", name: "HomeBot Pro" },
-  services: [{
-    service: "nationwidemortgage.com",
-    scopes: ["rate_lock:read", "documents:read"],
-    constraints: { signing: false },
-    accessMode: "browser",
-    browserConfig: {
-      allowedUrls: ["https://portal.nationwidemortgage.com/*"],
-      credentialVaultRef: "1password://vault/mortgage-portal",
-    },
-  }],
-  rules: [{ id: "no-signing", description: "Never sign anything", enforcement: "hard" }],
-  expires: "2026-09-01",
+  service: "nationwidemortgage.com",
+  scopes: ["rate_lock:read", "documents:read"],
+  constraints: { signing: false },
+  expiresIn: "30d",
 });
 
-// Authorize actions
-const result = await client.authorize(token, "nationwidemortgage.com", "rate_lock:read");
+const valid = await apoa.tokens.validate(token.raw, { publicKey: keys.publicKey });
+console.log(valid.valid); // true
+
+const result = await apoa.authorizations.check(
+  token,
+  "nationwidemortgage.com",
+  "rate_lock:read"
+);
 // { authorized: true, checks: { revoked: false, scopeAllowed: true, ... } }
 
-const denied = await client.authorize(token, "nationwidemortgage.com", "documents:sign");
+const denied = await apoa.authorizations.check(
+  token,
+  "nationwidemortgage.com",
+  "documents:sign"
+);
 // { authorized: false, reason: "scope 'documents:sign' not in authorized scopes" }
 ```
 
@@ -58,7 +58,18 @@ const denied = await client.authorize(token, "nationwidemortgage.com", "document
 ## Two Usage Styles
 
 ```typescript
-// Style 1: Client instance (recommended for apps)
+// Style 1: Application facade (recommended for apps)
+const apoa = new APOA({ privateKey: keys.privateKey });
+const token = await apoa.tokens.createGrant({
+  principal: "did:apoa:you",
+  agent: "did:apoa:agent",
+  service: "service.com",
+  scopes: ["action:read"],
+  expiresIn: "30d",
+});
+await apoa.authorizations.check(token, "service.com", "action:read");
+
+// Style 2: Protocol client
 const client = createClient({
   revocationStore: new MemoryRevocationStore(),
   auditStore: new MemoryAuditStore(),
@@ -66,7 +77,7 @@ const client = createClient({
 });
 await client.authorize(token, "service.com", "action:read");
 
-// Style 2: Standalone imports (for scripts and tests)
+// Style 3: Standalone imports (for scripts, tests, and adapters)
 import { checkScope, authorize, createToken } from '@apoa/core';
 checkScope(token, "service.com", "action:read");
 ```

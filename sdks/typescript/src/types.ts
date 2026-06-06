@@ -270,6 +270,38 @@ export interface APOAClientOptions {
   defaultSigningOptions?: Partial<SigningOptions>;
 }
 
+/** Options for the application-facing APOA facade. */
+export interface APOAOptions extends Omit<APOAClientOptions, 'defaultSigningOptions'> {
+  privateKey?: CryptoKey;
+  algorithm?: 'EdDSA' | 'ES256';
+  kid?: string;
+}
+
+/** Duration string for convenience expiry fields, e.g. `15m`, `2h`, `30d`. */
+export type DurationString = `${number}${'s' | 'm' | 'h' | 'd'}`;
+
+/** One-service grant input accepted by the application-facing facade. */
+export interface SimpleGrantInput {
+  principal: string | Principal;
+  agent: string | Agent;
+  service?: string;
+  scopes?: string[];
+  services?: ServiceAuthorization[];
+  constraints?: ConstraintMap;
+  rules?: Rule[];
+  expires?: Date | string;
+  expiresIn?: DurationString;
+  revocable?: boolean;
+  delegatable?: boolean;
+  maxDelegationDepth?: number;
+  metadata?: TokenMetadata;
+  accessMode?: AccessMode;
+  browserConfig?: BrowserSessionConfig;
+  apiConfig?: APIAccessConfig;
+  agentProvider?: AgentProvider;
+  legal?: LegalFramework;
+}
+
 /** The configured APOA client. */
 export interface APOAClient {
   createToken(definition: APOADefinition, options?: SigningOptions): Promise<APOAToken>;

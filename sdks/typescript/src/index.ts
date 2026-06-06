@@ -36,6 +36,9 @@ export type {
   AuditStore,
   APOAClientOptions,
   APOAClient,
+  APOAOptions,
+  DurationString,
+  SimpleGrantInput,
 } from './types.js';
 
 export {
@@ -82,3 +85,4 @@ export type { JWK, JWKS, PublicKeyToJWKOptions, JWKSResolverOptions } from './jw
 
 // Phase 6: Client
 export { createClient } from './client.js';
+export { APOA } from './apoa.js';

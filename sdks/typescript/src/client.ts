@@ -43,7 +43,9 @@ export function createClient(options?: APOAClientOptions): APOAClient {
 
   function mergeSigningOptions(opts?: SigningOptions): SigningOptions {
     if (!opts && !defaultSigningOptions?.privateKey) {
-      throw new Error('No signing options provided and no defaultSigningOptions.privateKey configured');
+      throw new Error(
+        'APOA needs a private key to create tokens. Pass `privateKey` to `new APOA({ privateKey })`, configure `createClient({ defaultSigningOptions: { privateKey } })`, or pass signing options to `createToken(...)`.'
+      );
     }
     return {
       ...defaultSigningOptions,

@@ -1,24 +1,28 @@
-import { createToken, checkScope, generateKeyPair } from '../src/index.js';
+import { APOA, generateKeyPair } from '../src/index.js';
 
 const keys = await generateKeyPair();
+const apoa = new APOA({ privateKey: keys.privateKey });
 
-const token = await createToken({
-  principal: { id: "did:apoa:you" },
+const token = await apoa.tokens.createGrant({
+  principal: "did:apoa:you",
   agent: { id: "did:apoa:your-agent", name: "My Agent" },
-  services: [{
-    service: "mychart.com",
-    scopes: ["appointments:read", "prescriptions:read"],
-    constraints: { signing: false, data_export: false }
-  }],
-  expires: "2026-09-01"
-}, { privateKey: keys.privateKey });
+  service: "mychart.com",
+  scopes: ["appointments:read", "prescriptions:read"],
+  constraints: { signing: false, data_export: false },
+  expiresIn: "30d",
+});
+
+const validation = await apoa.tokens.validate(token.raw, {
+  publicKey: keys.publicKey,
+});
+console.log("token valid →", validation.valid);
 
 // Can the agent read appointments? Yes.
-const allowed = checkScope(token, "mychart.com", "appointments:read");
+const allowed = await apoa.authorizations.check(token, "mychart.com", "appointments:read");
 console.log("appointments:read →", allowed);
-// { allowed: true, reason: "matched scope 'appointments:read'", matchedScope: "appointments:read" }
+// { authorized: true, checks: { revoked: false, scopeAllowed: true, ... } }
 
 // Can the agent send messages? Absolutely not.
-const denied = checkScope(token, "mychart.com", "messages:send");
+const denied = await apoa.authorizations.check(token, "mychart.com", "messages:send");
 console.log("messages:send →", denied);
-// { allowed: false, reason: "scope 'messages:send' not in authorized scopes" }
+// { authorized: false, reason: "scope 'messages:send' not in authorized scopes" }
