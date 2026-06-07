@@ -17,13 +17,13 @@
 
 <p align="center">
   <a href="#the-problem">Problem</a> ·
-  <a href="#the-concept">Concept</a> ·
-  <a href="#how-mode-b-actually-works">Mode B</a> ·
-  <a href="#show-me-a-real-scenario">Scenario</a> ·
-  <a href="#demos">Demos</a> ·
   <a href="#sdks--install-it-it-works">SDKs</a> ·
+  <a href="#the-concept">Concept</a> ·
+  <a href="#show-me-a-real-scenario">Scenario</a> ·
+  <a href="#how-mode-b-actually-works">Mode B</a> ·
   <a href="#cross-sdk-compatibility">Compatibility</a> ·
-  <a href="#delegation-chains-they-only-shrink">Delegation</a>
+  <a href="#delegation-chains-they-only-shrink">Delegation</a> ·
+  <a href="#demos">Demos</a>
   <br>
   <a href="#why-not-just-use">Alternatives</a> ·
   <a href="#ecosystem">Ecosystem</a> ·
@@ -55,93 +55,6 @@ APOA combines two capabilities:
 
 ---
 
-## The Concept
-
-There's a concept that has existed in law for *literally centuries*: power of attorney. You sign a document, you say "this person can do these things on my behalf, within these limits, until this date." Done. Your grandmother has one. It's not complicated.
-
-APOA is that — but for AI agents operating in the digital world. An open standard that defines how a human (the **Principal**) formally authorizes an AI agent (the **Agent**) to access and act within digital services (the **Services**) on their behalf — with explicit scope, time limits, and a full audit trail.
-
-![APOA Authorization Flow — Principal → Token → Agent → Service](assets/hero-flow.png)
-
-**The APOA Token** is a signed JWT that contains everything needed to understand the authorization:
-
-| Field | What It Does | Example |
-| --- | --- | --- |
-| `principal` | Who's granting authority | `did:apoa:jane_xyz` |
-| `agent` | Who's receiving authority | `did:apoa:homebot_abc` |
-| `agentProvider` | The legal entity on the hook | `HomeBot Inc.` |
-| `service` | Where the agent can go | `nationwidemortgage.com` |
-| `scope` | What the agent can do there | `["rate_lock:read", "documents:read"]` |
-| `constraints` | Hard limits | `{signing: false, data_export: false}` |
-| `accessMode` | How it connects | `"browser"` or `"api"` |
-| `browserConfig` | URL jail + vault reference | `{allowedUrls: [...], credentialVaultRef: "..."}` |
-| `rules` | Behavioral directives | `"Never sign, submit, or commit to anything"` |
-| `legal` | Jurisdiction + legal basis | `{jurisdiction: "US-CA", legalBasis: ["UETA-14"]}` |
-| `expires` | When it dies | `2026-06-15` |
-
----
-
-## How Mode B Actually Works
-
-This is the part that gets hand-waved in most authorization discussions, because it's genuinely hard. Here's how APOA approaches it.
-
-![APOA Mode B — Secure Credential Injection via Vault](assets/mode-b-flow.png)
-
-```
-1. Agent runtime receives task: "check Jane's rate lock status"
-2. Runtime calls authorize(token, "nationwidemortgage.com", "rate_lock:read")
-   → authorized: true
-3. Runtime reads browserConfig from the token:
-   → allowedUrls, credentialVaultRef, blockedActions
-4. Runtime requests credential injection from vault
-   → Vault injects credentials via encrypted channel
-   → AI model NEVER sees the credentials
-5. Agent navigates mortgage portal within URL restrictions
-6. Every action logged to audit trail with URL + screenshot
-7. Session terminates after maxSessionDuration (30 min)
-```
-
-The SDK handles steps 2 and 6 (authorization + audit). The credential vault handles step 4 (injection). The browser runtime handles steps 3, 5, and 7. Nobody handles the credentials except the vault.
-
----
-
-## Show Me a Real Scenario
-
-You're buying a home: four different web portals, none of which talk to each other, all with time-sensitive deadlines. With APOA, you authorize your agent across all four — three browser-based, one API — with zero signing authority, every action logged, and instant revocation. No passwords shared with any AI model.
-
-**Today:** You spend hours each week logging into portals, refreshing pages, and lying awake at night wondering if you missed a disclosure deadline.
-
-**With APOA:** Your agent monitors everything, alerts you to what matters, and keeps a complete audit trail — without ever having the authority to commit you to anything. And as the standard evolves toward [high-authority delegation](SPEC.md#appendix-d-future-work), the same agent that monitors your mortgage today negotiates the deal tomorrow.
-
-See [`docs/SCENARIOS.md`](docs/SCENARIOS.md) for the full home-purchase token (YAML, ~50 lines), and [`EXAMPLES.md`](EXAMPLES.md) for additional scenarios across healthcare and other domains.
-
----
-
-## Demos
-
-Working end-to-end demos that exercise the SDK against real services and real signing.
-
-### [`negotiate`](https://github.com/agenticpoa/negotiate) — AI agents negotiate a YC SAFE
-
-Two agents — founder-side and investor-side — negotiate a SAFE using the Rubinstein alternating-offers model. Each agent operates inside an APOA token its principal signed: valuation cap floor/ceiling, discount bounds, MFN, pro-rata, signing posture. Every offer is constraint-validated and chained into a Merkle log; the executed PDF includes the full negotiation history.
-
-[![AI Agents Negotiate a YC SAFE](https://img.youtube.com/vi/l_wUpE8daOU/maxresdefault.jpg)](https://youtu.be/l_wUpE8daOU)
-
-```bash
-git clone https://github.com/agenticpoa/negotiate.git
-cd negotiate && pip install -r requirements.txt
-cp .env.example .env  # add ANTHROPIC_API_KEY
-python negotiate.py --no-sshsign
-```
-
-### [`claw-negotiate`](https://github.com/agenticpoa/claw-negotiate) — same negotiation, OpenClaw + Telegram
-
-The same SAFE-negotiation flow packaged as an OpenClaw skill: founder and investor each run their own OpenClaw, the two agents negotiate publicly in a Telegram group, signing happens privately in DMs, and the executed SAFE carries an [`sshsign`](https://github.com/agenticpoa/sshsign) audit trail. Demonstrates APOA across two independently-authorized agents in a real consumer surface.
-
-[![claw-negotiate demo](https://img.youtube.com/vi/T2Y2Tr__g_k/maxresdefault.jpg)](https://www.youtube.com/watch?v=T2Y2Tr__g_k)
-
----
-
 ## SDKs — Install It, It Works
 
 ### TypeScript
@@ -161,11 +74,6 @@ const token = await apoa.tokens.createGrant({
   agent: { id: "did:apoa:your-agent", name: "HomeBot Pro" },
   service: "nationwidemortgage.com",
   scopes: ["rate_lock:read", "documents:read"],
-  accessMode: "browser",
-  browserConfig: {
-    allowedUrls: ["https://portal.nationwidemortgage.com/*"],
-    credentialVaultRef: "1password://vault/mortgage-portal",
-  },
   expiresIn: "30d",
 });
 
@@ -193,7 +101,6 @@ pip install apoa
 ```python
 from apoa import (
     APOA,
-    BrowserSessionConfig,
     generate_key_pair,
 )
 
@@ -205,11 +112,6 @@ token = apoa.tokens.create_grant(
     agent="did:apoa:your-agent",
     service="nationwidemortgage.com",
     scopes=["rate_lock:read", "documents:read"],
-    access_mode="browser",
-    browser_config=BrowserSessionConfig(
-        allowed_urls=["https://portal.nationwidemortgage.com/*"],
-        credential_vault_ref="1password://vault/mortgage-portal",
-    ),
     expires_in="30d",
 )
 
@@ -220,6 +122,8 @@ result = apoa.authorizations.check(token, "nationwidemortgage.com", "documents:s
 # AuthorizationResult(authorized=False, reason="scope 'documents:sign' not in authorized scopes")
 ```
 
+For browser-based services with no API, add `accessMode` / `access_mode` plus a `browserConfig` / `browser_config` URL jail and credential vault reference. See [Mode B](#how-mode-b-actually-works).
+
 The SDKs handle token creation, signing, validation, scope checking, constraint enforcement, hard/soft rule enforcement, delegation with capability attenuation, chain verification, cascade revocation, and audit logging. See [`sdks/typescript/`](sdks/typescript/) for TypeScript and [`sdks/python/`](sdks/python/) for Python.
 
 For production deployments:
@@ -229,21 +133,100 @@ For production deployments:
 
 ---
 
+## The Concept
+
+There's a concept that has existed in law for *literally centuries*: power of attorney. You sign a document, you say "this person can do these things on my behalf, within these limits, until this date." Done. Your grandmother has one. It's not complicated.
+
+APOA is that — but for AI agents operating in the digital world. An open standard that defines how a human (the **Principal**) formally authorizes an AI agent (the **Agent**) to access and act within digital services (the **Services**) on their behalf — with explicit scope, time limits, and a full audit trail.
+
+![APOA Authorization Flow — Principal → Token → Agent → Service](assets/hero-flow.png)
+
+**The APOA Token** is a signed JWT that contains everything needed to understand the authorization:
+
+| Field | What It Does | Example |
+| --- | --- | --- |
+| `principal` | Who's granting authority | `did:apoa:jane_xyz` |
+| `agent` | Who's receiving authority | `did:apoa:homebot_abc` |
+| `agentProvider` | The legal entity on the hook | `HomeBot Inc.` |
+| `services[].service` | Where the agent can go | `nationwidemortgage.com` |
+| `services[].scopes` | What the agent can do there | `["rate_lock:read", "documents:read"]` |
+| `constraints` | Hard limits | `{signing: false, data_export: false}` |
+| `accessMode` | How it connects | `"browser"` or `"api"` |
+| `browserConfig` | URL jail + vault reference | `{allowedUrls: [...], credentialVaultRef: "..."}` |
+| `rules` | Behavioral directives | `"Never sign, submit, or commit to anything"` |
+| `legal` | Jurisdiction + legal basis | `{jurisdiction: "US-CA", legalBasis: ["UETA-14"]}` |
+| `expires` | When it dies | `2026-06-15` |
+
+---
+
+## Show Me a Real Scenario
+
+You're buying a home: four different web portals, none of which talk to each other, all with time-sensitive deadlines. With APOA, you authorize your agent across all four — three browser-based, one API — with zero signing authority, every action logged, and instant revocation. No passwords shared with any AI model.
+
+**Today:** You spend hours each week logging into portals, refreshing pages, and lying awake at night wondering if you missed a disclosure deadline.
+
+**With APOA:** Your agent monitors everything, alerts you to what matters, and keeps a complete audit trail — without ever having the authority to commit you to anything. And as the standard evolves toward [high-authority delegation](SPEC.md#appendix-d-future-work), the same agent that monitors your mortgage today negotiates the deal tomorrow.
+
+See [`docs/SCENARIOS.md`](docs/SCENARIOS.md) for the full home-purchase token (YAML, ~50 lines), and [`EXAMPLES.md`](EXAMPLES.md) for additional scenarios across healthcare and other domains.
+
+---
+
+## How Mode B Actually Works
+
+This is the part that gets hand-waved in most authorization discussions, because it's genuinely hard. Here's how APOA approaches it.
+
+![APOA Mode B — Secure Credential Injection via Vault](assets/mode-b-flow.png)
+
+```
+1. Agent runtime receives task: "check Jane's rate lock status"
+2. Runtime calls authorize(token, "nationwidemortgage.com", "rate_lock:read")
+   → authorized: true
+3. Runtime reads browserConfig from the token:
+   → allowedUrls, credentialVaultRef, blockedActions
+4. Runtime requests credential injection from vault
+   → Vault injects credentials via encrypted channel
+   → AI model NEVER sees the credentials
+5. Agent navigates mortgage portal within URL restrictions
+6. Runtime logs each action via the SDK audit API
+   → optional URL + screenshot metadata
+7. Session terminates after maxSessionDuration (30 min)
+```
+
+The SDK handles authorization and provides audit APIs. The credential vault handles step 4 (injection). The browser runtime handles steps 3, 5, 6, and 7, including URL and screenshot capture when those fields are logged. Nobody handles the credentials except the vault.
+
+---
+
 ## Cross-SDK Compatibility
 
 Tokens are JWTs. A token signed by `@apoa/core` validates in `apoa` (Python) and vice versa — same algorithm, same payload schema, same scope and rule semantics.
 
 ```typescript
-// In TypeScript: sign a token, hand off the JWT string.
-const { raw } = await createToken(definition, { privateKey });
-fetch("https://python-service/validate", { method: "POST", body: raw });
+// In TypeScript: create a grant, hand off the JWT string.
+import { APOA, generateKeyPair } from '@apoa/core';
+
+const keys = await generateKeyPair();
+const apoa = new APOA({ privateKey: keys.privateKey });
+const token = await apoa.tokens.createGrant({
+  principal: "did:apoa:you",
+  agent: "did:apoa:agent",
+  service: "mychart.com",
+  scopes: ["appointments:read"],
+  expiresIn: "30d",
+});
+
+fetch("https://python-service/validate", { method: "POST", body: token.raw });
 ```
 
 ```python
 # In Python: validate the same JWT, run authorization checks.
-result = client.validate_token(raw_jwt, ValidationOptions(public_key=key))
+from apoa import APOA
+
+apoa = APOA()
+# raw_jwt is token.raw from above; public_key is the issuer's public key.
+result = apoa.tokens.validate(raw_jwt, public_key=public_key)
 assert result.valid
-authz = client.authorize(result.token, "mychart.com", "appointments:read")
+assert result.token is not None
+authz = apoa.authorizations.check(result.token, "mychart.com", "appointments:read")
 ```
 
 The serialization layer maps the camelCase JWT payload (e.g., `accessMode`, `agentProvider`) to snake_case in Python (`access_mode`, `agent_provider`) automatically. Cross-SDK fixture tests run on every CI build to catch any drift before it ships.
@@ -268,6 +251,31 @@ Parent Token (you → HomeBot Pro)
 ```
 
 Revoke the parent? Every child in the chain dies instantly. That's cascade revocation, and it's the default because leaving orphaned child tokens alive is almost never what you want.
+
+---
+
+## Demos
+
+Working end-to-end demos that exercise the SDK against real services and real signing.
+
+### [`negotiate`](https://github.com/agenticpoa/negotiate) — AI agents negotiate a YC SAFE
+
+Two agents — founder-side and investor-side — negotiate a SAFE using the Rubinstein alternating-offers model. Each agent operates inside an APOA token its principal signed: valuation cap floor/ceiling, discount bounds, MFN, pro-rata, signing posture. Every offer is constraint-validated and chained into a Merkle log; the executed PDF includes the full negotiation history.
+
+[![AI Agents Negotiate a YC SAFE](https://img.youtube.com/vi/l_wUpE8daOU/maxresdefault.jpg)](https://youtu.be/l_wUpE8daOU)
+
+```bash
+git clone https://github.com/agenticpoa/negotiate.git
+cd negotiate && pip install -r requirements.txt
+cp .env.example .env  # add ANTHROPIC_API_KEY
+python negotiate.py --no-sshsign
+```
+
+### [`claw-negotiate`](https://github.com/agenticpoa/claw-negotiate) — same negotiation, OpenClaw + Telegram
+
+The same SAFE-negotiation flow packaged as an OpenClaw skill: founder and investor each run their own OpenClaw, the two agents negotiate publicly in a Telegram group, signing happens privately in DMs, and the executed SAFE carries an [`sshsign`](https://github.com/agenticpoa/sshsign) audit trail. Demonstrates APOA across two independently-authorized agents in a real consumer surface.
+
+[![claw-negotiate demo](https://img.youtube.com/vi/T2Y2Tr__g_k/maxresdefault.jpg)](https://www.youtube.com/watch?v=T2Y2Tr__g_k)
 
 ---
 
