@@ -10,6 +10,14 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and
 
 ---
 
+## `@apoa/core` 0.2.3 — 2026-06-06
+
+### Changed
+
+- Refresh npm package README to show the new `APOA` facade quickstart and split the three usage styles into separate sections.
+
+---
+
 ## `@apoa/core` 0.2.2 / `apoa` 0.3.2 — 2026-06-06
 
 ### Added
