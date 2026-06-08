@@ -75,7 +75,18 @@ jobs:
         working-directory: sdks/python
         run: uv run --with build python3 -m build
 
+      - name: Check whether version is already on PyPI
+        id: published
+        run: |
+          if curl -fsS "https://pypi.org/pypi/apoa/${{ steps.ver.outputs.version }}/json" >/dev/null 2>&1; then
+            echo "exists=true" >> "$GITHUB_OUTPUT"
+            echo "apoa ${{ steps.ver.outputs.version }} is already published; skipping PyPI publish."
+          else
+            echo "exists=false" >> "$GITHUB_OUTPUT"
+          fi
+
       - name: Publish to PyPI
+        if: steps.published.outputs.exists != 'true'
         uses: pypa/gh-action-pypi-publish@release/v1
         with:
           packages-dir: sdks/python/dist
@@ -145,7 +156,20 @@ jobs:
         working-directory: sdks/typescript
         run: npm run build
 
+      - name: Check whether version is already on npm
+        id: published
+        working-directory: sdks/typescript
+        run: |
+          pkg_name=$(node -p "require('./package.json').name")
+          if npm view "$pkg_name@${{ steps.ver.outputs.version }}" version --silent >/dev/null 2>&1; then
+            echo "exists=true" >> "$GITHUB_OUTPUT"
+            echo "$pkg_name@${{ steps.ver.outputs.version }} is already published; skipping npm publish."
+          else
+            echo "exists=false" >> "$GITHUB_OUTPUT"
+          fi
+
       - name: Publish to npm via OIDC Trusted Publisher (with provenance)
+        if: steps.published.outputs.exists != 'true'
         # No NODE_AUTH_TOKEN: npm picks up the GitHub Actions OIDC identity
         # and the npm registry resolves it against the configured Trusted
         # Publisher rule (this repo + this workflow file).
