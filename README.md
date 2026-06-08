@@ -16,10 +16,12 @@
 </p>
 
 <p align="center">
+  <a href="#try-apoa-in-60-seconds">Quickstart</a> ·
+  <a href="#what-this-does">What It Does</a> ·
+  <a href="#sdk-quickstarts">SDKs</a> ·
+  <a href="#protocol-model">Protocol</a> ·
+  <a href="#integrations">Integrations</a> ·
   <a href="#the-problem">Problem</a> ·
-  <a href="#sdks--install-it-it-works">SDKs</a> ·
-  <a href="#the-concept">Concept</a> ·
-  <a href="#show-me-a-real-scenario">Scenario</a> ·
   <a href="#how-mode-b-actually-works">Mode B</a> ·
   <a href="#cross-sdk-compatibility">Compatibility</a> ·
   <a href="#delegation-chains-they-only-shrink">Delegation</a> ·
@@ -35,29 +37,78 @@
   <a href="#origin">Origin</a>
 </p>
 
-## The Problem
+## Try APOA in 60 Seconds
 
-> In January 2026, a developer [gave an AI agent access to his email, calendar, and browser](https://aaronstuyvenberg.com/posts/clawd-bought-a-car) and told it to buy him a car. The agent negotiated a $4,200 discount and closed the deal. It also sent a confidential email to the wrong person — because its entire authorization model was a natural language prompt that said "prompt me before replying to anything consequential."
->
-> AI agents are already negotiating, transacting, and acting on behalf of humans — with zero formal authorization, no audit trail, and no kill switch. We think the infrastructure should catch up.
+Install the TypeScript SDK:
 
-Every agent authorization framework assumes your target service has an API. Meanwhile, your mortgage lender's web portal looks like it was built during the Bush administration. Your health insurance company will add OAuth right after they finish migrating off Internet Explorer. Your title company's "secure document center" has a password requirement of exactly 8 characters, no special characters allowed.
+```bash
+npm install @apoa/core
+```
 
-If every service had an API, we wouldn't need APOA. They don't. So here we are.
+Create a signed grant for a docs assistant, validate it, then check whether the agent can perform a specific action:
 
-APOA combines two capabilities:
+```typescript
+import { APOA, generateKeyPair } from '@apoa/core';
 
-**1. Natural language rules that actually do something.** Not just scopes and permissions. Rules like "never sign, submit, or commit to anything" (`enforcement: hard` — denied at `authorize()` time) and rules like "alert me if any deadline is within 48 hours" (`enforcement: soft` — logged, triggers callbacks). Enforcement is mechanical: the SDK matches on the rule's `id`, not the natural-language description. APOA expresses both at the token level — see [SPEC §7](SPEC.md#7-rules) for the schema and semantics.
+const keys = await generateKeyPair();
+const apoa = new APOA({ privateKey: keys.privateKey });
 
-**2. Browser-based agent authorization.** Your agent needs to check your mortgage rate lock. Your lender doesn't have an API. APOA authorizes a browser session where credentials come from a vault — the AI never sees them — and every action is scoped, audited, and instantly revocable. As of May 2026 no shipping product covers this end-to-end (see [Mode B](#how-mode-b-actually-works) and [`docs/PRIOR_ART.md`](docs/PRIOR_ART.md)).
+const token = await apoa.tokens.createGrant({
+  principal: "did:apoa:alex",
+  agent: { id: "did:apoa:docs-assistant", name: "Docs Assistant" },
+  service: "knowledge-base",
+  scopes: ["articles:search", "articles:summarize"],
+  expiresIn: "24h",
+});
 
-![APOA Two Access Modes — API-based and Browser-based](assets/two-modes.png)
+const validation = await apoa.tokens.validate(token.raw, {
+  publicKey: keys.publicKey,
+});
+console.log(validation.valid); // true
+
+const allowed = await apoa.authorizations.check(
+  token,
+  "knowledge-base",
+  "articles:summarize"
+);
+console.log(allowed.authorized); // true
+
+const denied = await apoa.authorizations.check(
+  token,
+  "knowledge-base",
+  "articles:delete"
+);
+console.log(denied.authorized); // false
+```
+
+That is the core APOA loop: create a bounded authorization grant, validate it, and ask whether a proposed action is allowed.
+
+Runnable versions live in [`examples/quickstart-typescript`](examples/quickstart-typescript/) and [`examples/quickstart-python`](examples/quickstart-python/).
 
 ---
 
-## SDKs — Install It, It Works
+## What This Does
 
-### TypeScript
+APOA is an authorization standard for AI agents. It answers:
+
+- Who granted authority?
+- Which agent received it?
+- Which services can the agent use?
+- Which actions are allowed?
+- What limits, rules, and expiration apply?
+- Can the authority be delegated?
+- Can it be revoked?
+- What happened afterward?
+
+It is inspired by power of attorney: a principal grants an agent bounded authority to act on their behalf. APOA makes that authority machine-readable, signed, scoped, revocable, and auditable.
+
+![APOA Authorization Flow — Principal → Token → Agent → Service](assets/hero-flow.png)
+
+---
+
+## SDK Quickstarts
+
+### TypeScript Facade
 
 ```bash
 npm install @apoa/core
@@ -70,29 +121,25 @@ const keys = await generateKeyPair();
 const apoa = new APOA({ privateKey: keys.privateKey });
 
 const token = await apoa.tokens.createGrant({
-  principal: "did:apoa:you",
-  agent: { id: "did:apoa:your-agent", name: "HomeBot Pro" },
-  service: "nationwidemortgage.com",
-  scopes: ["rate_lock:read", "documents:read"],
-  expiresIn: "30d",
+  principal: "did:apoa:alex",
+  agent: { id: "did:apoa:docs-assistant", name: "Docs Assistant" },
+  service: "knowledge-base",
+  scopes: ["articles:search", "articles:summarize"],
+  expiresIn: "24h",
 });
+
+const valid = await apoa.tokens.validate(token.raw, { publicKey: keys.publicKey });
+console.log(valid.valid); // true
 
 const result = await apoa.authorizations.check(
   token,
-  "nationwidemortgage.com",
-  "rate_lock:read"
+  "knowledge-base",
+  "articles:summarize"
 );
-// { authorized: true, checks: { revoked: false, scopeAllowed: true, ... } }
-
-const denied = await apoa.authorizations.check(
-  token,
-  "nationwidemortgage.com",
-  "documents:sign"
-);
-// { authorized: false, reason: "scope 'documents:sign' not in authorized scopes" }
+console.log(result.authorized); // true
 ```
 
-### Python
+### Python Facade
 
 ```bash
 pip install apoa
@@ -104,70 +151,86 @@ from apoa import (
     generate_key_pair,
 )
 
-private_key, _ = generate_key_pair()
+private_key, public_key = generate_key_pair()
 apoa = APOA(private_key=private_key)
 
 token = apoa.tokens.create_grant(
-    principal="did:apoa:you",
-    agent="did:apoa:your-agent",
-    service="nationwidemortgage.com",
-    scopes=["rate_lock:read", "documents:read"],
-    expires_in="30d",
+    principal="did:apoa:alex",
+    agent="did:apoa:docs-assistant",
+    service="knowledge-base",
+    scopes=["articles:search", "articles:summarize"],
+    expires_in="24h",
 )
 
-result = apoa.authorizations.check(token, "nationwidemortgage.com", "rate_lock:read")
-# AuthorizationResult(authorized=True, ...)
+valid = apoa.tokens.validate(token.raw, public_key=public_key)
+print(valid.valid)  # True
 
-result = apoa.authorizations.check(token, "nationwidemortgage.com", "documents:sign")
-# AuthorizationResult(authorized=False, reason="scope 'documents:sign' not in authorized scopes")
+result = apoa.authorizations.check(token, "knowledge-base", "articles:summarize")
+print(result.authorized)  # True
 ```
 
-For browser-based services with no API, add `accessMode` / `access_mode` plus a `browserConfig` / `browser_config` URL jail and credential vault reference. See [Mode B](#how-mode-b-actually-works).
+### Three Usage Styles
 
-The SDKs handle token creation, signing, validation, scope checking, constraint enforcement, hard/soft rule enforcement, delegation with capability attenuation, chain verification, cascade revocation, and audit logging. See [`sdks/typescript/`](sdks/typescript/) for TypeScript and [`sdks/python/`](sdks/python/) for Python.
+The SDKs keep protocol-level APIs intact, but the recommended first path is the facade:
 
-For production deployments:
+| Style | Best For | API Shape |
+| --- | --- | --- |
+| Facade API | App developers and first integrations | `new APOA(...)`, `apoa.tokens.createGrant(...)`, `apoa.authorizations.check(...)` |
+| Protocol client | Stores, resolvers, and advanced options | `createClient(...)`, `client.createToken(...)`, `client.authorize(...)` |
+| Standalone functions | Tests, adapters, and protocol utilities | `createToken(...)`, `authorize(...)`, `delegate(...)`, `verifyChain(...)` |
 
-- **Storage** — the `RevocationStore` and `AuditStore` interfaces are pluggable. Point them at Redis, Postgres, DynamoDB, or whatever fits your stack. See [`docs/STORES.md`](docs/STORES.md) for concrete adapter recipes in both languages.
-- **Key distribution** — principals publish public keys at `/.well-known/jwks.json`; relying parties fetch and cache. The SDKs ship `publicKeyToJWK` / `buildJWKS` helpers and a `createJWKSResolver` that plugs into `validateToken`. See [`docs/JWKS.md`](docs/JWKS.md).
+See [`sdks/typescript/`](sdks/typescript/) for TypeScript and [`sdks/python/`](sdks/python/) for Python.
 
 ---
 
-## The Concept
-
-There's a concept that has existed in law for *literally centuries*: power of attorney. You sign a document, you say "this person can do these things on my behalf, within these limits, until this date." Done. Your grandmother has one. It's not complicated.
-
-APOA is that — but for AI agents operating in the digital world. An open standard that defines how a human (the **Principal**) formally authorizes an AI agent (the **Agent**) to access and act within digital services (the **Services**) on their behalf — with explicit scope, time limits, and a full audit trail.
-
-![APOA Authorization Flow — Principal → Token → Agent → Service](assets/hero-flow.png)
+## Protocol Model
 
 **The APOA Token** is a signed JWT that contains everything needed to understand the authorization:
 
 | Field | What It Does | Example |
 | --- | --- | --- |
-| `principal` | Who's granting authority | `did:apoa:jane_xyz` |
-| `agent` | Who's receiving authority | `did:apoa:homebot_abc` |
-| `agentProvider` | The legal entity on the hook | `HomeBot Inc.` |
-| `services[].service` | Where the agent can go | `nationwidemortgage.com` |
-| `services[].scopes` | What the agent can do there | `["rate_lock:read", "documents:read"]` |
-| `constraints` | Hard limits | `{signing: false, data_export: false}` |
+| `principal` | Who grants authority | `did:apoa:alex` |
+| `agent` | Who receives authority | `did:apoa:docs-assistant` |
+| `agentProvider` | The entity operating the agent | `Example Labs` |
+| `services[].service` | Where the agent can act | `knowledge-base` |
+| `services[].scopes` | What the agent can do there | `["articles:search", "articles:summarize"]` |
+| `services[].constraints` | Hard limits | `{externalSharing: false}` |
 | `accessMode` | How it connects | `"browser"` or `"api"` |
 | `browserConfig` | URL jail + vault reference | `{allowedUrls: [...], credentialVaultRef: "..."}` |
-| `rules` | Behavioral directives | `"Never sign, submit, or commit to anything"` |
-| `legal` | Jurisdiction + legal basis | `{jurisdiction: "US-CA", legalBasis: ["UETA-14"]}` |
+| `rules[]` | Behavioral directives | `"Never share internal documents externally"` |
+| `legal` | Jurisdiction + legal basis | `{jurisdiction: "US-CA"}` |
 | `expires` | When it dies | `2026-06-15` |
+
+The facade accepts convenient singular `service` / `scopes` input and normalizes it into the protocol-level `services[]` shape.
 
 ---
 
-## Show Me a Real Scenario
+## Integrations
 
-You're buying a home: four different web portals, none of which talk to each other, all with time-sensitive deadlines. With APOA, you authorize your agent across all four — three browser-based, one API — with zero signing authority, every action logged, and instant revocation. No passwords shared with any AI model.
+- [`@apoa/mcp`](https://github.com/agenticpoa/apoa-mcp) — authorize MCP tool calls with per-tool scopes, revocation, delegation chains, and audit trails.
+- [`@apoa/a2a`](https://github.com/agenticpoa/apoa-a2a) — attach APOA tokens to A2A messages and verify scoped authority across agent hops.
+- [`sshsign`](https://github.com/agenticpoa/sshsign) — SSH-based signing service for AI agents with co-sign approval and immutable audit trails.
+- [Jean-Claw Van Damme](https://github.com/agenticpoa/jean-claw-van-damme) — authorization gatekeeper for OpenClaw agents.
 
-**Today:** You spend hours each week logging into portals, refreshing pages, and lying awake at night wondering if you missed a disclosure deadline.
+The main SDK teaches the primitive first. The adapters show where it plugs into agent protocols.
 
-**With APOA:** Your agent monitors everything, alerts you to what matters, and keeps a complete audit trail — without ever having the authority to commit you to anything. And as the standard evolves toward [high-authority delegation](SPEC.md#appendix-d-future-work), the same agent that monitors your mortgage today negotiates the deal tomorrow.
+---
 
-See [`docs/SCENARIOS.md`](docs/SCENARIOS.md) for the full home-purchase token (YAML, ~50 lines), and [`EXAMPLES.md`](EXAMPLES.md) for additional scenarios across healthcare and other domains.
+## The Problem
+
+> In January 2026, a developer [gave an AI agent access to his email, calendar, and browser](https://aaronstuyvenberg.com/posts/clawd-bought-a-car). The agent completed part of the task. It also sent a confidential email to the wrong person — because its entire authorization model was a natural language prompt that said "prompt me before replying to anything consequential."
+>
+> AI agents are already acting on behalf of humans with little formal authorization, limited auditability, and weak revocation. We think the infrastructure should catch up.
+
+Most authorization frameworks assume your target service has an API. Many important services still do not. APOA is designed for both API-based services and browser-based services, where an agent may need bounded authority inside a web session without seeing the user's credentials.
+
+APOA combines two capabilities:
+
+**1. Natural language rules that actually do something.** Not just scopes and permissions. Rules like "never share internal documents externally" (`enforcement: hard` — denied at `authorize()` time) and rules like "alert me if any document is labeled confidential" (`enforcement: soft` — logged, triggers callbacks). Enforcement is mechanical: the SDK matches on the rule's `id`, not the natural-language description. APOA expresses both at the token level — see [SPEC §7](SPEC.md#7-rules) for the schema and semantics.
+
+**2. Browser-based agent authorization.** Your agent needs to work with a web app that has no API. APOA authorizes a browser session where credentials come from a vault — the AI never sees them — and every action is scoped, audited, and instantly revocable. As of May 2026 no shipping product covers this end-to-end (see [Mode B](#how-mode-b-actually-works) and [`docs/PRIOR_ART.md`](docs/PRIOR_ART.md)).
+
+![APOA Two Access Modes — API-based and Browser-based](assets/two-modes.png)
 
 ---
 
@@ -178,15 +241,15 @@ This is the part that gets hand-waved in most authorization discussions, because
 ![APOA Mode B — Secure Credential Injection via Vault](assets/mode-b-flow.png)
 
 ```
-1. Agent runtime receives task: "check Jane's rate lock status"
-2. Runtime calls authorize(token, "nationwidemortgage.com", "rate_lock:read")
+1. Agent runtime receives task: "summarize updates in the internal handbook"
+2. Runtime calls authorize(token, "knowledge-base", "articles:summarize")
    → authorized: true
 3. Runtime reads browserConfig from the token:
    → allowedUrls, credentialVaultRef, blockedActions
 4. Runtime requests credential injection from vault
    → Vault injects credentials via encrypted channel
    → AI model NEVER sees the credentials
-5. Agent navigates mortgage portal within URL restrictions
+5. Agent navigates the documentation portal within URL restrictions
 6. Runtime logs each action via the SDK audit API
    → optional URL + screenshot metadata
 7. Session terminates after maxSessionDuration (30 min)
@@ -207,11 +270,11 @@ import { APOA, generateKeyPair } from '@apoa/core';
 const keys = await generateKeyPair();
 const apoa = new APOA({ privateKey: keys.privateKey });
 const token = await apoa.tokens.createGrant({
-  principal: "did:apoa:you",
-  agent: "did:apoa:agent",
-  service: "mychart.com",
-  scopes: ["appointments:read"],
-  expiresIn: "30d",
+  principal: "did:apoa:alex",
+  agent: "did:apoa:docs-assistant",
+  service: "knowledge-base",
+  scopes: ["articles:search"],
+  expiresIn: "24h",
 });
 
 fetch("https://python-service/validate", { method: "POST", body: token.raw });
@@ -226,7 +289,7 @@ apoa = APOA()
 result = apoa.tokens.validate(raw_jwt, public_key=public_key)
 assert result.valid
 assert result.token is not None
-authz = apoa.authorizations.check(result.token, "mychart.com", "appointments:read")
+authz = apoa.authorizations.check(result.token, "knowledge-base", "articles:search")
 ```
 
 The serialization layer maps the camelCase JWT payload (e.g., `accessMode`, `agentProvider`) to snake_case in Python (`access_mode`, `agent_provider`) automatically. Cross-SDK fixture tests run on every CI build to catch any drift before it ships.
@@ -240,11 +303,11 @@ When your agent delegates to a sub-agent, permissions can only get *narrower*. T
 ![APOA Delegation Chains — Permissions Only Shrink](assets/delegation-chain.png)
 
 ```
-Parent Token (you → HomeBot Pro)
-  scope: [rate_lock:read, documents:read, timeline:read, conditions:read]
+Parent Token (Alex → Docs Assistant)
+  scope: [articles:search, articles:summarize, collections:read]
 
-  └── Child Token (HomeBot Pro → DocReviewer)
-        scope: [documents:read]                    ← subset only
+  └── Child Token (Docs Assistant → Citation Checker)
+        scope: [articles:search]                   ← subset only
         expires: ≤ parent expiration               ← cannot outlive parent
         rules: parent rules + additional            ← can only add, not remove
         delegation_depth: decremented              ← eventually hits 0

@@ -1,0 +1,14 @@
+{
+  "name": "apoa-quickstart-typescript",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "start": "tsx index.ts"
+  },
+  "dependencies": {
+    "@apoa/core": "^0.2.3",
+    "tsx": "^4.20.0"
+  },
+  "devDependencies": {}
+}
+

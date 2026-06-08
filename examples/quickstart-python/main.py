@@ -1,10 +1,4 @@
-"""Minimal example: create a token, check what the agent can and can't do."""
-
-from apoa import (
-    APOA,
-    Agent,
-    generate_key_pair,
-)
+from apoa import APOA, generate_key_pair
 
 
 def main() -> None:
@@ -13,24 +7,26 @@ def main() -> None:
 
     token = apoa.tokens.create_grant(
         principal="did:apoa:alex",
-        agent=Agent(id="did:apoa:docs-assistant", name="Docs Assistant"),
+        agent="did:apoa:docs-assistant",
         service="knowledge-base",
         scopes=["articles:search", "articles:summarize"],
-        constraints={"external_sharing": False},
         expires_in="24h",
     )
 
     validation = apoa.tokens.validate(token.raw, public_key=public_key)
-    print("token valid ->", validation.valid)
-
-    # Can the agent summarize articles? Yes.
     allowed = apoa.authorizations.check(token, "knowledge-base", "articles:summarize")
-    print("articles:summarize ->", allowed)
-
-    # Can the agent delete articles? Absolutely not.
     denied = apoa.authorizations.check(token, "knowledge-base", "articles:delete")
-    print("articles:delete ->", denied)
+
+    print(
+        {
+            "valid": validation.valid,
+            "summarize": allowed.authorized,
+            "delete": denied.authorized,
+            "denied_reason": denied.reason,
+        }
+    )
 
 
 if __name__ == "__main__":
     main()
+

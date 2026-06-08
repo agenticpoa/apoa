@@ -13,7 +13,6 @@ pip install apoa
 ```python
 from apoa import (
     APOA,
-    BrowserSessionConfig,
     generate_key_pair,
 )
 
@@ -21,33 +20,28 @@ private_key, public_key = generate_key_pair()
 apoa = APOA(private_key=private_key)
 
 token = apoa.tokens.create_grant(
-    principal="did:apoa:you",
-    agent="did:apoa:your-agent",
-    service="nationwidemortgage.com",
-    scopes=["rate_lock:read", "documents:read"],
-    constraints={"signing": False},
-    access_mode="browser",
-    browser_config=BrowserSessionConfig(
-        allowed_urls=["https://portal.nationwidemortgage.com/*"],
-        credential_vault_ref="1password://vault/mortgage-portal",
-    ),
-    expires_in="30d",
+    principal="did:apoa:alex",
+    agent="did:apoa:docs-assistant",
+    service="knowledge-base",
+    scopes=["articles:search", "articles:summarize"],
+    constraints={"external_sharing": False},
+    expires_in="24h",
 )
 
 valid = apoa.tokens.validate(token.raw, public_key=public_key)
 print(valid.valid)  # True
 
-result = apoa.authorizations.check(token, "nationwidemortgage.com", "rate_lock:read")
+result = apoa.authorizations.check(token, "knowledge-base", "articles:summarize")
 print(result.authorized)  # True
 
-result = apoa.authorizations.check(token, "nationwidemortgage.com", "documents:sign")
+result = apoa.authorizations.check(token, "knowledge-base", "articles:delete")
 print(result.authorized)  # False
 ```
 
 ## Features
 
 - **Token lifecycle**: create, sign (Ed25519/ES256), validate, parse
-- **Scope matching**: hierarchical pattern matching (`appointments:*` matches `appointments:read`)
+- **Scope matching**: hierarchical pattern matching (`articles:*` matches `articles:read`)
 - **Constraint enforcement**: boolean denial at the SDK level, rich constraints at the protocol level
 - **Authorization**: revocation + scope + constraints + hard/soft rules in one call
 - **Delegation chains**: parent-to-child with cryptographically enforced attenuation
@@ -72,13 +66,13 @@ from apoa import APOA
 
 apoa = APOA(private_key=key)
 token = apoa.tokens.create_grant(
-    principal="did:apoa:you",
-    agent="did:apoa:agent",
-    service="service.com",
-    scopes=["action:read"],
-    expires_in="30d",
+    principal="did:apoa:alex",
+    agent="did:apoa:docs-assistant",
+    service="knowledge-base",
+    scopes=["articles:search"],
+    expires_in="24h",
 )
-apoa.authorizations.check(token, "service.com", "action:read")
+apoa.authorizations.check(token, "knowledge-base", "articles:search")
 ```
 
 ### Protocol client
@@ -89,7 +83,7 @@ Use this when you want direct access to stores, resolvers, and protocol-level op
 from apoa import create_client
 
 client = create_client(default_private_key=key)
-client.authorize(token, "service.com", "action:read")
+client.authorize(token, "knowledge-base", "articles:search")
 ```
 
 ### Standalone imports
@@ -99,7 +93,7 @@ Useful for scripts, tests, adapters, and focused protocol operations.
 ```python
 from apoa import authorize, check_scope
 
-check_scope(token, "service.com", "action:read")
+check_scope(token, "knowledge-base", "articles:search")
 ```
 
 See the [full spec](https://github.com/agenticpoa/apoa/blob/main/SPEC.md) and [TypeScript SDK](https://github.com/agenticpoa/apoa/tree/main/sdks/typescript) for more.
