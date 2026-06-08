@@ -10,6 +10,16 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and
 
 ---
 
+## `@apoa/core` 0.2.4 / `apoa` 0.3.3 — 2026-06-08
+
+### Changed
+
+- Refresh the main README and SDK package READMEs around a simpler docs-assistant quickstart that uses the `APOA` facade first.
+- Add runnable top-level TypeScript and Python quickstart examples under `examples/`.
+- Update SDK quickstart scripts to use the same neutral knowledge-base authorization flow.
+
+---
+
 ## `@apoa/core` 0.2.3 — 2026-06-06
 
 ### Changed
