@@ -20,21 +20,10 @@
   <a href="#what-this-does">What It Does</a> ·
   <a href="#sdk-quickstarts">SDKs</a> ·
   <a href="#protocol-model">Protocol</a> ·
-  <a href="#integrations">Integrations</a> ·
-  <a href="#the-problem">Problem</a> ·
   <a href="#how-mode-b-actually-works">Mode B</a> ·
-  <a href="#cross-sdk-compatibility">Compatibility</a> ·
-  <a href="#delegation-chains-they-only-shrink">Delegation</a> ·
-  <a href="#demos">Demos</a>
-  <br>
-  <a href="#why-not-just-use">Alternatives</a> ·
-  <a href="#ecosystem">Ecosystem</a> ·
-  <a href="#prior-art--related-work">Prior Art</a> ·
-  <a href="#technical-foundation">Foundation</a> ·
-  <a href="#project-status">Status</a> ·
-  <a href="#get-involved">Get Involved</a> ·
-  <a href="#license">License</a> ·
-  <a href="#origin">Origin</a>
+  <a href="#why-not-just-use">Compare</a> ·
+  <a href="#demos">Demos</a> ·
+  <a href="#get-involved">Get Involved</a>
 </p>
 
 ## Try APOA in 60 Seconds
@@ -108,6 +97,8 @@ It is inspired by power of attorney: a principal grants an agent bounded authori
 
 ## SDK Quickstarts
 
+You already saw the core create → validate → check loop above. These quickstarts go one step further: the TypeScript example shows how hard constraints and behavioral rules ride along on the same grant, and the Python example walks the full loop in Python.
+
 ### TypeScript Facade
 
 ```bash
@@ -120,23 +111,29 @@ import { APOA, generateKeyPair } from '@apoa/core';
 const keys = await generateKeyPair();
 const apoa = new APOA({ privateKey: keys.privateKey });
 
+// Same grant as the quickstart, now with a hard constraint and a behavioral rule.
 const token = await apoa.tokens.createGrant({
   principal: "did:apoa:alex",
   agent: { id: "did:apoa:docs-assistant", name: "Docs Assistant" },
   service: "knowledge-base",
   scopes: ["articles:search", "articles:summarize"],
+  constraints: { externalSharing: false },
+  rules: [
+    {
+      id: "no-external-sharing",
+      description: "Never share internal documents externally",
+      enforcement: "hard", // denied at check() time, matched on rule id
+    },
+  ],
   expiresIn: "24h",
 });
-
-const valid = await apoa.tokens.validate(token.raw, { publicKey: keys.publicKey });
-console.log(valid.valid); // true
 
 const result = await apoa.authorizations.check(
   token,
   "knowledge-base",
   "articles:summarize"
 );
-console.log(result.authorized); // true
+console.log(result.authorized); // true — within scope, no rule violated
 ```
 
 ### Python Facade
@@ -346,8 +343,8 @@ The same SAFE-negotiation flow packaged as an OpenClaw skill: founder and invest
 
 | Approach | APIs? | Browsers? | Scoped? | Revocable? | Auditable? | Delegation? | Legal? |
 | --- | --- | --- | --- | --- | --- | --- | --- |
-| OAuth 2.0 | ✅ | ❌ | ✅ | ✅ | Partial | ❌ | ❌ |
-| MCP Auth | ✅ | ❌ | ✅ | ❌ | Partial | ❌ | ❌ |
+| OAuth 2.0 | ✅ | ❌ | ✅ | ✅ | 🟡 | ❌ | ❌ |
+| MCP Auth | ✅ | ❌ | ✅ | ❌ | 🟡 | ❌ | ❌ |
 | ZCAP-LD | ✅ | ❌ | ✅ | ✅ | ❌ | ✅ | ❌ |
 | South et al. (2025) | ✅ | ❌ | ✅ | ❌ | ✅ | ✅ | ❌ |
 | `agent-passport-system` | ✅ | ❌ | ✅ | ✅ | ✅ | ✅ | ❌ |
@@ -355,6 +352,8 @@ The same SAFE-negotiation flow packaged as an OpenClaw skill: founder and invest
 | Password sharing | ❌ | ✅ | ❌ | ❌ | ❌ | ❌ | ❌ |
 | 1Password Autofill | ❌ | ✅ | ❌ | ❌ | ❌ | ❌ | ❌ |
 | **APOA** | **✅** | **✅** | **✅** | **✅** | **✅** | **✅** | **✅** |
+
+<sub>✅ full · 🟡 partial · ❌ none. The decisive row: APOA is the only option that covers both API-based and browser-based services.</sub>
 
 On the API side, the closest work is South et al.'s framework and `agent-passport-system`; APOA's distinct contribution is extending the model to browser-based services and adding explicit legal alignment. See [`docs/PRIOR_ART.md`](docs/PRIOR_ART.md) for the dated landscape.
 
