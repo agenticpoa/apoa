@@ -23,7 +23,6 @@
   <a href="#integrations">Integrations</a> ·
   <a href="#the-problem">Problem</a> ·
   <a href="#how-mode-b-actually-works">Mode B</a> ·
-  <a href="#why-not-just-use">Compare</a> ·
   <a href="#demos">Demos</a> ·
   <a href="#get-involved">Get Involved</a>
 </p>
@@ -340,12 +339,6 @@ python negotiate.py --no-sshsign
 The same SAFE-negotiation flow packaged as an OpenClaw skill: founder and investor each run their own OpenClaw, the two agents negotiate publicly in a Telegram group, signing happens privately in DMs, and the executed SAFE carries an [`sshsign`](https://github.com/agenticpoa/sshsign) audit trail. Demonstrates APOA across two independently-authorized agents in a real consumer surface.
 
 [![claw-negotiate demo](https://img.youtube.com/vi/T2Y2Tr__g_k/maxresdefault.jpg)](https://www.youtube.com/watch?v=T2Y2Tr__g_k)
-
----
-
-## Why Not Just Use...
-
-On the API side, the closest work is South et al.'s framework and `agent-passport-system`; APOA's distinct contribution is extending the model to browser-based services and adding legal-alignment metadata. See [`docs/PRIOR_ART.md`](docs/PRIOR_ART.md) for the dated landscape.
 
 ---
 
